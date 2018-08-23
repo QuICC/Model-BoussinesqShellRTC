@@ -9,6 +9,7 @@
 
 // System includes
 //
+#include <tuple>
 
 // External includes
 //
@@ -72,7 +73,7 @@ namespace Implicit {
          Equations::SharedShellExactScalarState spScalar;
          Equations::SharedShellExactVectorState spVector;
 
-         std::vector<std::tr1::tuple<int,int,MHDComplex> > tSH;
+         std::vector<std::tuple<int,int,MHDComplex> > tSH;
 
          // Add temperature initial state generator
          spScalar = spGen->addScalarEquation<Equations::ShellExactScalarState>();
@@ -82,13 +83,13 @@ namespace Implicit {
             case 0:
                spScalar->setStateType(Equations::ShellExactStateIds::HARMONIC);
                tSH.clear(); 
-               tSH.push_back(std::tr1::make_tuple(0,0,MHDComplex(1,1)));
-               tSH.push_back(std::tr1::make_tuple(1,0,MHDComplex(1,1)));
-               tSH.push_back(std::tr1::make_tuple(1,1,MHDComplex(1,1)));
-               tSH.push_back(std::tr1::make_tuple(2,0,MHDComplex(1,1)));
-               tSH.push_back(std::tr1::make_tuple(2,1,MHDComplex(1,1)));
-               tSH.push_back(std::tr1::make_tuple(2,2,MHDComplex(1,1)));
-               tSH.push_back(std::tr1::make_tuple(5,5,MHDComplex(1,1)));
+               tSH.push_back(std::make_tuple(0,0,MHDComplex(1,1)));
+               tSH.push_back(std::make_tuple(1,0,MHDComplex(1,1)));
+               tSH.push_back(std::make_tuple(1,1,MHDComplex(1,1)));
+               tSH.push_back(std::make_tuple(2,0,MHDComplex(1,1)));
+               tSH.push_back(std::make_tuple(2,1,MHDComplex(1,1)));
+               tSH.push_back(std::make_tuple(2,2,MHDComplex(1,1)));
+               tSH.push_back(std::make_tuple(5,5,MHDComplex(1,1)));
                spScalar->setHarmonicOptions(tSH);
                break;
 
@@ -105,48 +106,48 @@ namespace Implicit {
             case 0:
                spVector->setStateType(Equations::ShellExactStateIds::TOROIDAL);
                tSH.clear(); 
-               tSH.push_back(std::tr1::make_tuple(0,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,2,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(5,4,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(0,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,2,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(5,4,MHDComplex(1,0)));
                spVector->setHarmonicOptions(FieldComponents::Spectral::TOR, tSH);
                break;
 
             case 1:
                spVector->setStateType(Equations::ShellExactStateIds::POLOIDAL);
                tSH.clear(); 
-               tSH.push_back(std::tr1::make_tuple(0,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,2,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(4,3,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(0,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,2,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(4,3,MHDComplex(1,0)));
                spVector->setHarmonicOptions(FieldComponents::Spectral::POL, tSH);
                break;
 
             case 2:
                spVector->setStateType(Equations::ShellExactStateIds::TORPOL);
                tSH.clear(); 
-               tSH.push_back(std::tr1::make_tuple(0,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,2,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(5,4,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(0,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,2,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(5,4,MHDComplex(1,0)));
                spVector->setHarmonicOptions(FieldComponents::Spectral::TOR, tSH);
                tSH.clear(); 
-               tSH.push_back(std::tr1::make_tuple(0,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(1,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,0,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,1,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(2,2,MHDComplex(1,0)));
-               tSH.push_back(std::tr1::make_tuple(4,3,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(0,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(1,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,0,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,1,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(2,2,MHDComplex(1,0)));
+               tSH.push_back(std::make_tuple(4,3,MHDComplex(1,0)));
                spVector->setHarmonicOptions(FieldComponents::Spectral::POL, tSH);
                break;
 

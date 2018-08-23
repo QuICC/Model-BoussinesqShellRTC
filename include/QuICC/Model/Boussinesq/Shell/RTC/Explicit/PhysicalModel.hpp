@@ -1,11 +1,11 @@
 /** 
  * @file PhysicalModel.hpp
- * @brief Implementation of the Boussinesq rotating thermal convection in a spherical shell (Toroidal/Poloidal formulation)
+ * @brief Implementation of the Boussinesq rotating thermal convection in a spherical shell (Toroidal/Poloidal formulation) without coupled solve (standard implementation)
  * @author Philippe Marti \<philippe.marti@colorado.edu\>
  */
 
-#ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IMPLICIT_PHYSICALMODEL_HPP
-#define QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IMPLICIT_PHYSICALMODEL_HPP
+#ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_EXPLICIT_PHYSICALMODEL_HPP
+#define QUICC_MODEL_BOUSSINESQ_SHELL_RTC_EXPLICIT_PHYSICALMODEL_HPP
 
 // Model version number
 #define QUICC_MODEL_VERSION_MAJOR 0
@@ -24,10 +24,10 @@
 
 // Project includes
 //
-#include "Simulation/Simulation.hpp"
-#include "Generator/StateGenerator.hpp"
-#include "Generator/VisualizationGenerator.hpp"
-#include "SpatialSchemes/3D/SLFmScheme.hpp"
+#include "QuICC/Simulation/Simulation.hpp"
+#include "QuICC/Generator/StateGenerator.hpp"
+#include "QuICC/Generator/VisualizationGenerator.hpp"
+#include "QuICC/SpatialSchemes/3D/SLFlScheme.hpp"
 
 // THIS IS NOT A COMMENT BUT AND OPTION READ BY CMAKE
 // QUICC_SPATIALSCHEME_FORMULATION = TORPOL;
@@ -42,10 +42,10 @@ namespace Shell {
 
 namespace RTC {
 
-namespace Implicit {
+namespace Explicit {
 
    /**
-    * @brief Implementation of the Boussinesq rotating thermal convection spherical shell model (Toroidal/Poloidal formulation)
+    * @brief Implementation of the Boussinesq rotating thermal convection spherical shell model (Toroidal/Poloidal formulation) without coupled solve (standard implementation)
     */
    class PhysicalModel
    {
@@ -60,7 +60,7 @@ namespace Implicit {
          static const std::string PYCLASS;
 
          /// Typedef for the spatial scheme used
-         typedef Schemes::SLFmScheme SchemeType;
+         typedef Schemes::SLFlScheme SchemeType;
 
          /**
           * @brief Add the required equations
@@ -139,14 +139,4 @@ namespace Implicit {
 }
 }
 
-// 
-// Block compilation of unusable parallelisation algorithms
-//
-#ifdef QUICC_MPIALGO_SINGLE1D
-#error "The SINGLE1D parallelisation is not supported!" 
-#endif //QUICC_MPIALGO_SINGLE1D
-#if defined QUICC_MPIALGO_TUBULAR && !defined QUICC_SPLINALG_MUMPS && !defined QUICC_MPISPSOLVE
-#error "The TUBULAR parallelisation is not supported!" 
-#endif //defined QUICC_MPIALGO_TUBULAR && !defined QUICC_SPLINALG_MUMPS && !defined QUICC_MPISPSOLVE
-
-#endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IMPLICIT_PHYSICALMODEL_HPP
+#endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_EXPLICIT_PHYSICALMODEL_HPP

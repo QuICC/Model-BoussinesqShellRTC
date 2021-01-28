@@ -75,11 +75,15 @@ namespace RTC {
 
    void Momentum::initNLKernel(const bool force)
    {
-      // Initialize the physical kernel
-      auto spNLKernel = std::make_shared<Physical::Kernel::MomentumKernel>();
-      spNLKernel->setVelocity(this->name(), this->spUnknown());
-      spNLKernel->init(1.0, 1.0/this->eqParams().nd(NonDimensional::Ekman::id()));
-      this->mspNLKernel = spNLKernel;
+      // Initialize if empty or forced
+      if(force || !this->mspNLKernel)
+      {
+         // Initialize the physical kernel
+         auto spNLKernel = std::make_shared<Physical::Kernel::MomentumKernel>();
+         spNLKernel->setVelocity(this->name(), this->spUnknown());
+         spNLKernel->init(1.0, 1.0/this->eqParams().nd(NonDimensional::Ekman::id()));
+         this->mspNLKernel = spNLKernel;
+      }
    }
 
    void Momentum::setRequirements()

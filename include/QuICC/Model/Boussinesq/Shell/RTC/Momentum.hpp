@@ -1,7 +1,6 @@
 /**
  * @file Momentum.hpp
  * @brief Implementation of the vector Navier-Stokes equation for the Boussinesq rotating thermal convection spherical shell
- * @author Philippe Marti \<philippe.marti@colorado.edu\>
  */
 
 #ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_MOMENTUM_HPP
@@ -12,14 +11,14 @@
 
 // System includes
 //
+#include <memory>
 
 // External includes
 //
 
 // Project includes
 //
-#include "QuICC/Base/Typedefs.hpp"
-#include "QuICC/TypeSelectors/ScalarSelector.hpp"
+#include "QuICC/Typedefs.hpp"
 #include "QuICC/Equations/IVectorEquation.hpp"
 
 namespace QuICC {
@@ -43,7 +42,7 @@ namespace RTC {
           *
           * @param spEqParams  Shared equation parameters
           */
-         Momentum(SharedEquationParameters spEqParams);
+         Momentum(SharedEquationParameters spEqParams, SpatialScheme::SharedCISpatialScheme spScheme);
 
          /**
           * @brief Simple empty destructor
@@ -51,12 +50,9 @@ namespace RTC {
          virtual ~Momentum();
 
          /**
-          * @brief Compute the nonlinear interaction term
-          *
-          * @param rNLComp Nonlinear term component
-          * @param id      ID of the component (allows for a more general implementation)
+          * @brief Initialize nonlinear interaction kernel
           */
-         virtual void computeNonlinear(Datatypes::PhysicalScalarType& rNLComp, FieldComponents::Physical::Id id) const;
+         virtual void initNLKernel(const bool force = false);
 
       protected:
          /**
@@ -73,16 +69,6 @@ namespace RTC {
           * @brief Set the nonlinear integration components
           */
          virtual void setNLComponents();
-
-         /**
-          * @brief Storage for the cos(theta) grid values (if required)
-          */
-         Array mCosTheta;
-
-         /**
-          * @brief Storage for the sin(theta) grid values (if required)
-          */
-         Array mSinTheta;
 
       private:
    };

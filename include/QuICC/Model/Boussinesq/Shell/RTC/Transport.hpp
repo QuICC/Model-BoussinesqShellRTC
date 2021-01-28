@@ -1,7 +1,6 @@
 /**
  * @file Transport.hpp
  * @brief Implementation of the transport equation for the Boussinesq rotating thermal convection in a spherical shell
- * @author Philippe Marti \<philippe.marti@colorado.edu\>
  */
 
 #ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_TRANSPORT_HPP
@@ -12,14 +11,14 @@
 
 // System includes
 //
+#include <memory>
 
 // External includes
 //
 
 // Project includes
 //
-#include "QuICC/Base/Typedefs.hpp"
-#include "QuICC/TypeSelectors/ScalarSelector.hpp"
+#include "QuICC/Typedefs.hpp"
 #include "QuICC/Equations/IScalarEquation.hpp"
 
 namespace QuICC {
@@ -33,7 +32,7 @@ namespace Shell {
 namespace RTC {
 
    /**
-    * @brief Implementation of the transport equation for the Boussinesq rotating thermal convection in a spherical shell 
+    * @brief Implementation of the transport equation for the Boussinesq rotating thermal convection in a spherical shell
     */
    class Transport: public IScalarEquation
    {
@@ -43,7 +42,7 @@ namespace RTC {
           *
           * @param spEqParams  Shared equation parameters
           */
-         Transport(SharedEquationParameters spEqParams);
+         Transport(SharedEquationParameters spEqParams, SpatialScheme::SharedCISpatialScheme spScheme);
 
          /**
           * @brief Simple empty destructor
@@ -51,12 +50,9 @@ namespace RTC {
          virtual ~Transport();
 
          /**
-          * @brief Compute the nonlinear interaction term
-          *
-          * @param rNLComp Nonlinear term component
-          * @param id      ID of the component (allows for a more general implementation)
+          * @brief Initialize nonlinear interaction kernel
           */
-         virtual void computeNonlinear(Datatypes::PhysicalScalarType& rNLComp, FieldComponents::Physical::Id id) const;
+         virtual void initNLKernel(const bool force = false);
 
       protected:
          /**

@@ -50,10 +50,10 @@ namespace RTC {
    void Momentum::setCoupling()
    {
       int start;
-      if(this->ss().id() == SpatialScheme::SLFl::sId)
+      if(this->ss().has(SpatialScheme::Feature::SpectralOrdering132))
       {
          start = 1;
-      } else if(this->ss().id() == SpatialScheme::SLFm::sId)
+      } else if(this->ss().has(SpatialScheme::Feature::SpectralOrdering123))
       {
          start = 0;
       } else

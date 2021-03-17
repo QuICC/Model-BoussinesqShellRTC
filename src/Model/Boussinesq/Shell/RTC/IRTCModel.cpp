@@ -64,29 +64,13 @@ namespace RTC {
       return VectorFormulation::TORPOL;
    }
 
-   void IRTCModel::registerNames()
-   {
-      // Physical names
-      PhysicalNames::Velocity::id();
-      PhysicalNames::VelocityZ::id();
-      PhysicalNames::VorticityZ::id();
-      PhysicalNames::Temperature::id();
-      // NonDimensional names
-      NonDimensional::Ekman::id();
-      NonDimensional::Prandtl::id();
-      NonDimensional::Rayleigh::id();
-      NonDimensional::RRatio::id();
-      NonDimensional::Heating::id();
-      NonDimensional::CflInertial::id();
-   }
-
    void IRTCModel::addEquations(SharedSimulation spSim)
    {
       // Add transport equation
-      spSim->addEquation<Equations::Boussinesq::Shell::RTC::Transport>();
+      spSim->addEquation<Equations::Boussinesq::Shell::RTC::Transport>(this->spBackend());
 
       // Add Navier-Stokes equation
-      spSim->addEquation<Equations::Boussinesq::Shell::RTC::Momentum>();
+      spSim->addEquation<Equations::Boussinesq::Shell::RTC::Momentum>(this->spBackend());
    }
 
    void IRTCModel::addStates(SharedStateGenerator spGen)

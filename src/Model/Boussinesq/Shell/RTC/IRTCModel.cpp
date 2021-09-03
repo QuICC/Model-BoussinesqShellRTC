@@ -86,7 +86,7 @@ namespace RTC {
          std::pair<Equations::SHMapType::iterator,bool> ptSH;
 
          // Add temperature initial state generator
-         spScalar = spGen->addEquation<Equations::ShellExactScalarState>();
+         spScalar = spGen->addEquation<Equations::ShellExactScalarState>(this->spBackend());
          spScalar->setIdentity(PhysicalNames::Temperature::id());
          switch(1)
          {
@@ -104,7 +104,7 @@ namespace RTC {
          }
 
          // Add velocity initial state generator
-         spVector = spGen->addEquation<Equations::ShellExactVectorState>();
+         spVector = spGen->addEquation<Equations::ShellExactVectorState>(this->spBackend());
          spVector->setIdentity(PhysicalNames::Velocity::id());
          switch(3)
          {
@@ -178,22 +178,22 @@ namespace RTC {
       Equations::SharedSphericalVerticalFieldVisualizer spVertical;
 
       // Add temperature field visualization
-      spScalar = spVis->addEquation<Equations::ScalarFieldVisualizer>();
+      spScalar = spVis->addEquation<Equations::ScalarFieldVisualizer>(this->spBackend());
       spScalar->setFields(true, false);
       spScalar->setIdentity(PhysicalNames::Temperature::id());
 
       // Add velocity field visualization
-      spVector = spVis->addEquation<Equations::VectorFieldVisualizer>();
+      spVector = spVis->addEquation<Equations::VectorFieldVisualizer>(this->spBackend());
       spVector->setFields(true, false, false);
       spVector->setIdentity(PhysicalNames::Velocity::id());
 
       // Add vertical velocity visualization
-      spVertical = spVis->addEquation<Equations::SphericalVerticalFieldVisualizer>();
+      spVertical = spVis->addEquation<Equations::SphericalVerticalFieldVisualizer>(this->spBackend());
       spVertical->setFieldType(FieldType::VECTOR);
       spVertical->setIdentity(PhysicalNames::VelocityZ::id(), PhysicalNames::Velocity::id());
 
       // Add vertical vorticity visualization
-      spVertical = spVis->addEquation<Equations::SphericalVerticalFieldVisualizer>();
+      spVertical = spVis->addEquation<Equations::SphericalVerticalFieldVisualizer>(this->spBackend());
       spVertical->setFieldType(FieldType::CURL);
       spVertical->setIdentity(PhysicalNames::VorticityZ::id(), PhysicalNames::Velocity::id());
 

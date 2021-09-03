@@ -36,7 +36,7 @@ namespace RTC {
    /**
     * @brief Implementation of the Boussinesq rotating thermal convection spherical shell model (Toroidal/Poloidal formulation)
     */
-   class IRTCModel: public IPhysicalPyModel
+   class IRTCModel: public IPhysicalPyModel<Simulation,StateGenerator,VisualizationGenerator>
    {
       public:
          /**

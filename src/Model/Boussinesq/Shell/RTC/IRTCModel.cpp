@@ -44,7 +44,6 @@
 #include "QuICC/Io/Variable/ShellTorPolMSpectrumWriter.hpp"
 #include "QuICC/Generator/States/RandomScalarState.hpp"
 #include "QuICC/Generator/States/RandomVectorState.hpp"
-#include "QuICC/Generator/States/ShellExactStateIds.hpp"
 #include "QuICC/Generator/States/ShellExactScalarState.hpp"
 #include "QuICC/Generator/States/ShellExactVectorState.hpp"
 #include "QuICC/Generator/States/Kernels/Shell/BenchmarkTempC1.hpp"

@@ -22,6 +22,7 @@
 #include "QuICC/Math/Constants.hpp"
 #include "QuICC/NonDimensional/Ekman.hpp"
 #include "QuICC/PhysicalNames/Velocity.hpp"
+#include "QuICC/SolveTiming/Prognostic.hpp"
 #include "QuICC/SpatialScheme/ISpatialScheme.hpp"
 #include "QuICC/Model/Boussinesq/Shell/RTC/MomentumKernel.hpp"
 
@@ -94,7 +95,7 @@ namespace RTC {
       this->setName(PhysicalNames::Velocity::id());
 
       // Set solver timing
-      this->setSolveTiming(SolveTiming::PROGNOSTIC);
+      this->setSolveTiming(SolveTiming::Prognostic::id());
 
       // Forward transform generates nonlinear RHS
       this->setForwardPathsType(FWD_IS_NONLINEAR);

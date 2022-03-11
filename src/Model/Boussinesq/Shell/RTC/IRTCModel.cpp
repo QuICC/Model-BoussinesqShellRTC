@@ -254,19 +254,19 @@ namespace RTC {
       spTemp->expect(PhysicalNames::Temperature::id());
       spSim->addAsciiOutputFile(spTemp);
 
-#if 0
+#if 1
       // Create temperature L energy spectrum writer
       auto spTempL = std::make_shared<Io::Variable::ShellScalarLSpectrumWriter>("temperature", spSim->ss().tag());
       spTempL->expect(PhysicalNames::Temperature::id());
-      //spTempL->numberOutput();
-      //spTempL->onlyEvery(100);
+      spTempL->numberOutput();
+      spTempL->onlyEvery(100);
       spSim->addAsciiOutputFile(spTempL);
 
       // Create temperature M energy spectrum writer
       auto spTempM = std::make_shared<Io::Variable::ShellScalarMSpectrumWriter>("temperature", spSim->ss().tag());
       spTempM->expect(PhysicalNames::Temperature::id());
-      //spTempM->numberOutput();
-      //spTempM->onlyEvery(100);
+      spTempM->numberOutput();
+      spTempM->onlyEvery(100);
       spSim->addAsciiOutputFile(spTempM);
 #endif
 
@@ -275,19 +275,19 @@ namespace RTC {
       spKinetic->expect(PhysicalNames::Velocity::id());
       spSim->addAsciiOutputFile(spKinetic);
 
-#if 0
+#if 1
       // Create kinetic L energy spectrum writer
       auto spKineticL = std::make_shared<Io::Variable::ShellTorPolLSpectrumWriter>("kinetic", spSim->ss().tag());
       spKineticL->expect(PhysicalNames::Velocity::id());
-      //spKineticL->numberOutput();
-      //spKineticL->onlyEvery(100);
+      spKineticL->numberOutput();
+      spKineticL->onlyEvery(100);
       spSim->addAsciiOutputFile(spKineticL);
 
       // Create kinetic M energy spectrum writer
       auto spKineticM = std::make_shared<Io::Variable::ShellTorPolMSpectrumWriter>("kinetic", spSim->ss().tag());
       spKineticM->expect(PhysicalNames::Velocity::id());
-      //spKineticM->numberOutput();
-      //spKineticM->onlyEvery(100);
+      spKineticM->numberOutput();
+      spKineticM->onlyEvery(100);
       spSim->addAsciiOutputFile(spKineticM);
 #endif
    }

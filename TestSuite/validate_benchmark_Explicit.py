@@ -23,6 +23,7 @@ results += vt.tableTest("temperature_l_spectrum0100.dat", ref_dir, data_dir, tol
 #   M spectrum
 results += vt.tableTest("temperature_m_spectrum0000.dat", ref_dir, data_dir, tol = short_tol)
 results += vt.tableTest("temperature_m_spectrum0100.dat", ref_dir, data_dir, tol = long_tol, percol = True)
+
 # Kinetic
 #   energy
 results += vt.tableTest("kinetic_energy.dat", ref_dir, data_dir, tol = short_tol, max_rows = short_rows)
@@ -33,12 +34,11 @@ results += vt.tableTest("kinetic_l_spectrum0100.dat", ref_dir, data_dir, tol = l
 #   M spectrum
 results += vt.tableTest("kinetic_m_spectrum0000.dat", ref_dir, data_dir, tol = short_tol)
 results += vt.tableTest("kinetic_m_spectrum0100.dat", ref_dir, data_dir, tol = long_tol, percol = True)
+
 # Nusselt number
 #results += vt.tableTest("nusselt.dat", ref_dir, data_dir, tol = short_tol, max_rows = short_rows)
 #results += vt.tableTest("nusselt.dat", ref_dir, data_dir, tol = short_tol)
-# Angular momentum
-#results += vt.tableTest("angular_momentum.dat", ref_dir, data_dir, tol = short_tol, max_rows = short_rows)
-#results += vt.tableTest("angular_momentum.dat", ref_dir, data_dir, tol = long_tol)
+
 # CFL
 results += vt.tableTest("cfl.dat", ref_dir, data_dir, usecols=(0,1,3,5,6,7,8,9), tol = short_tol, max_rows = short_rows)
 #results += vt.tableTest("cfl.dat", ref_dir, data_dir, usecols=(0,1,3,5,6,7,8,9), tol = long_tol)

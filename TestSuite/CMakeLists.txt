@@ -4,8 +4,9 @@ set(QUICC_WORK_DIR
 # Base dir for reference data archive
 set(QUICC_REF_ARCHIVE_DIR "${CMAKE_BINARY_DIR}/Models/_refdata")
 
+set(_model "BoussinesqShellRTC")
 set(_impl "Explicit")
-set(_benchmarkExe "BoussinesqShellRTC${_impl}Model")
+set(_benchmarkExe "${_model}${_impl}Model")
 set(_benchmarkTarget "Benchmark${_benchmarkExe}")
 
 set(_refdir "${QUICC_WORK_DIR}/_refdata/${_impl}")
@@ -33,18 +34,21 @@ add_dependencies(${_benchmarkTarget} ${_benchmarkExe})
 include(FetchBenchmarkReference)
 quicc_fetch_benchmark_reference(
   ${_benchmarkTarget}
-  MODEL BoussinesqShellRTC
+  MODEL ${_model}
   FILENAME "${_impl}.tar.gz"
   ARCHIVEDIR ${QUICC_REF_ARCHIVE_DIR}
   DATADIR ${QUICC_WORK_DIR}
 )
 
-set(_testname "Benchmark${_benchmarkExe}")
+set(_testname "RunBenchmark${_benchmarkExe}")
 add_test(
   NAME ${_testname}
   COMMAND "${_benchmarkExe}"
   WORKING_DIRECTORY
   "${_rundir}"
+  )
+set_tests_properties(${_testname} PROPERTIES
+  TIMEOUT 300
   )
 
 set(_testname "ValidateBenchmark${_benchmarkExe}")
@@ -56,7 +60,7 @@ add_test(
   WORKING_DIRECTORY
   "${_rundir}"
   )
-set_tests_properties(ValidateBenchmark${_benchmarkExe} PROPERTIES
+set_tests_properties(${_testname} PROPERTIES
   PASS_REGULAR_EXPRESSION "All benchmark validation tests passed!"
   TIMEOUT 60
   )

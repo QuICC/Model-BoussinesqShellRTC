@@ -1,9 +1,38 @@
 import os,sys, getopt
 import numpy as np
+
+import struct
 import math
 
 import colorcodes as cc
 _c = cc.Colorcodes()
+
+def compute_ulp(x):
+    """Return the value of the least significant bit of a
+    float x, such that the first float bigger than x is x+ulp(x).
+    Then, given an expected result x and a tolerance of n ulps,
+    the result y should be such that abs(y-x) <= n * ulp(x).
+    The results from this function will only make sense on platforms
+    where native doubles are represented in IEEE 754 binary64 format.
+
+    From official test_math.py. Python 3.9 has now math.ulp
+    """
+
+    x = abs(float(x))
+    if math.isnan(x) or math.isinf(x):
+        return x
+
+    # Find next float up from x.
+    n = struct.unpack('<q', struct.pack('<d', x))[0]
+    x_next = struct.unpack('<d', struct.pack('<q', n + 1))[0]
+    if math.isinf(x_next):
+        # Corner case: x was the largest finite float. Then it's
+        # not an exact power of two, so we can take the difference
+        # between x and the previous float.
+        x_prev = struct.unpack('<d', struct.pack('<q', n - 1))[0]
+        return x - x_prev
+    else:
+        return x_next - x
 
 
 def processArgv(argv):
@@ -93,7 +122,7 @@ def tableTest(fname, ref_dir, data_dir, tol = 11, usecols = None, max_rows = Non
                 if r > threshold:
                     d = data[idx]
                     diff = np.abs(r-d)
-                    ulp = diff/(math.ulp(col_max[idx[1]]))
+                    ulp = diff/(compute_ulp(col_max[idx[1]]))
                     if ulp > max_ulp:
                         max_ulp = ulp
                     if ulp > tol:
@@ -102,7 +131,7 @@ def tableTest(fname, ref_dir, data_dir, tol = 11, usecols = None, max_rows = Non
             for r, d in np.nditer([ref, data]):
                 if r > threshold:
                     diff = np.abs(r-d)
-                    ulp = diff/(math.ulp(r))
+                    ulp = diff/(compute_ulp(r))
                     if ulp > max_ulp:
                         max_ulp = ulp
                     if ulp > tol:

@@ -4,10 +4,10 @@ import validation_tools as vt
 
 ref_dir, data_dir = vt.processArgv(sys.argv[1:])
 
-results = np.zeros(2, dtype='i8')
+results = []
 
 # Tolerance per max rows
-rows = np.arange(0, 101, 10)
+rows = list(range(0, 101, 10))
 tols = [11, 31, 60, 60, 60, 60, 60, 60, 70, 70, 70]
 
 prefixes = ['temperature', 'kinetic']
@@ -17,20 +17,20 @@ spectra = ['l', 'm']
 for prefix in prefixes:
     # Energy
     for r, t in zip(rows,tols):
-        results += vt.tableTest(prefix + '_energy.dat', ref_dir, data_dir, tol = t, max_rows = r+1)
+        results.append(vt.tableTest(prefix + '_energy.dat', ref_dir, data_dir, r, tol = t, max_rows = r+1))
 
     # Spectra
     for mode in spectra:
         for r, t in zip(rows,tols):
-            results += vt.tableTest(prefix +  '_' + mode + f'_spectrum{r:04}.dat', ref_dir, data_dir, tol = t, percol = True)
+            results.append(vt.tableTest(prefix +  '_' + mode + f'_spectrum{r:04}.dat', ref_dir, data_dir, r, tol = t, percol = True))
 
 # Nusselt number
 #for r, t in zip(rows,tols):
-#    results += vt.tableTest("nusselt.dat", ref_dir, data_dir, tol = t, max_rows = r+1)
+#    results.append(vt.tableTest("nusselt.dat", ref_dir, data_dir, r, tol = t, max_rows = r+1))
 
 # CFL
 for r, t in zip(rows,tols):
-    results += vt.tableTest("cfl.dat", ref_dir, data_dir, usecols=(0,1,3,5,6,7,8,9), tol = t, max_rows = r+1)
+    results.append(vt.tableTest("cfl.dat", ref_dir, data_dir, r, usecols=(0,1,3,5,6,7,8,9), tol = t, max_rows = r+1))
 
 # Output test summary
-vt.printSummary(results)
+vt.printSummary(results, rows)

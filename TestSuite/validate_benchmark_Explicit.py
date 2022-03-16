@@ -7,8 +7,8 @@ ref_dir, data_dir = vt.processArgv(sys.argv[1:])
 results = np.zeros(2, dtype='i8')
 
 # Tolerance per max rows
-rows = [0, 10, 20, 100]
-tols = [101, 101, 101, 1e3]
+rows = np.arange(0, 101, 10)
+tols = [11, 31, 60, 60, 60, 60, 60, 60, 70, 70, 70]
 
 prefixes = ['temperature', 'kinetic']
 spectra = ['l', 'm']

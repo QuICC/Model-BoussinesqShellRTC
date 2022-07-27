@@ -36,6 +36,7 @@
 #include "QuICC/Io/Variable/StateFileReader.hpp"
 #include "QuICC/Io/Variable/StateFileWriter.hpp"
 #include "QuICC/Io/Variable/VisualizationFileWriter.hpp"
+#include "QuICC/Io/Variable/ShellNusseltWriter.hpp"
 #include "QuICC/Io/Variable/ShellScalarEnergyWriter.hpp"
 #include "QuICC/Io/Variable/ShellScalarLSpectrumWriter.hpp"
 #include "QuICC/Io/Variable/ShellScalarMSpectrumWriter.hpp"
@@ -266,6 +267,7 @@ namespace RTC {
       tags.emplace("temperature_energy", onOff);
       tags.emplace("temperature_l_spectrum", options);
       tags.emplace("temperature_m_spectrum", options);
+      tags.emplace("temperature_nusselt", onOff);
 
       return tags;
    }
@@ -289,6 +291,9 @@ namespace RTC {
 
       // Create kinetic M energy spectrum writer
       this->enableAsciiFile<Io::Variable::ShellTorPolMSpectrumWriter>("kinetic_m_spectrum", "kinetic", PhysicalNames::Velocity::id(), spSim);
+
+      // Create nusselt number writer
+      this->enableAsciiFile<Io::Variable::ShellNusseltWriter>("temperature_nusselt", "temperature_", PhysicalNames::Temperature::id(), spSim);
    }
 
 }

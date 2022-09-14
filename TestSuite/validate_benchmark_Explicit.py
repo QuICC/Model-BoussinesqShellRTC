@@ -8,7 +8,7 @@ results = []
 
 # Tolerance per max rows
 rows = list(range(0, 101, 10))
-tols = [11, 31, 60, 60, 60, 60, 60, 60, 70, 70, 70]
+tols = [11, 31, 60, 60, 60, 60, 60, 60, 70, 70, 125]
 
 prefixes = ['temperature', 'kinetic']
 spectra = ['l', 'm']
@@ -33,4 +33,4 @@ for r, t in zip(rows,tols):
     results.append(vt.tableTest("cfl.dat", ref_dir, data_dir, r, usecols=(0,1,3,5,6,7,8,9), tol = t, max_rows = r+1))
 
 # Output test summary
-vt.printSummary(results, rows)
+vt.printSummary(results, rows, reftol = tols)

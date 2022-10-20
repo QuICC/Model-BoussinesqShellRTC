@@ -33,4 +33,4 @@ for r, t in zip(rows,tols):
     results.append(vt.tableTest("cfl.dat", ref_dir, data_dir, r, usecols=(0,1,3,5,6,7,8,9), tol = t, max_rows = r+1))
 
 # Output test summary
-vt.printSummary(results, rows)
+vt.printSummary(results, rows, tols)

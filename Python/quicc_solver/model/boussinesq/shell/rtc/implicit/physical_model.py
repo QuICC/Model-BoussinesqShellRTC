@@ -22,7 +22,7 @@ class PhysicalModel(base_model.BaseModel):
     def nondimensional_parameters(self):
         """Get the list of nondimensional parameters"""
 
-        return ["ekman", "prandtl", "rayleigh", "rratio", "heating"]
+        return ["ekman", "prandtl", "rayleigh", "r_ratio", "heating"]
 
     def automatic_parameters(self, eq_params):
         """Extend parameters with automatically computable values"""
@@ -36,13 +36,13 @@ class PhysicalModel(base_model.BaseModel):
         # Unit gap width
         if True:
             gap = {
-                    "lower1d":eq_params["rratio"]/(1.0 - eq_params["rratio"]),
-                    "upper1d":1.0/(1.0 - eq_params["rratio"])
+                    "lower1d":eq_params["r_ratio"]/(1.0 - eq_params["r_ratio"]),
+                    "upper1d":1.0/(1.0 - eq_params["r_ratio"])
                     }
         # Unit radius
         else:
             gap = {
-                    "lower1d":eq_params["rratio"],
+                    "lower1d":eq_params["r_ratio"],
                     "upper1d":1.0
                     }
 
@@ -409,10 +409,10 @@ class PhysicalModel(base_model.BaseModel):
     def rescale_time(self, eq_params):
         """Rescale time for linear stability calculation"""
 
-        T = 1.0/(eq_params['ekman']*(1.0-eq_params['rratio'])**2)
+        T = 1.0/(eq_params['ekman']*(1.0-eq_params['r_ratio'])**2)
         #c_dt = T**(2./3.)*(0.4715 - 0.6089*T**(-1/3.))
         c_dt = T**(2./3.)*(0.3144 - 0.6089*T**(-1./3.)) + T**(1./3.)*0.5186*int(0.3029*T**(1./3.))
-        c_dt = c_dt*(1.0-eq_params['rratio'])**2
+        c_dt = c_dt*(1.0-eq_params['r_ratio'])**2
         c_dt = 1.0
         return c_dt
 
@@ -421,7 +421,7 @@ class PhysicalModel(base_model.BaseModel):
 
         Ra = eq_params['rayleigh']
         ri, ro = (self.automatic_parameters(eq_params)['lower1d'], self.automatic_parameters(eq_params)['upper1d'])
-        rratio = eq_params['rratio']
+        rratio = eq_params['r_ratio']
         T = 1.0/eq_params['ekman']
 
         # Easy switch from nondimensionalistion by R_o (Dormy) and (R_o - R_i) (Christensen)

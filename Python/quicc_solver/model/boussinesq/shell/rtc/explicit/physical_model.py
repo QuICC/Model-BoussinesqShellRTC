@@ -23,7 +23,7 @@ class PhysicalModel(base_model.BaseModel):
     def nondimensional_parameters(self):
         """Get the list of nondimensional parameters"""
 
-        return ["ekman", "prandtl", "rayleigh", "rratio", "heating"]
+        return ["ekman", "prandtl", "rayleigh", "r_ratio", "heating"]
 
     def automatic_parameters(self, eq_params):
         """Extend parameters with automatically computable values"""
@@ -34,7 +34,7 @@ class PhysicalModel(base_model.BaseModel):
                 "cfl_inertial":0.1*E
             }
 
-        rratio = eq_params['rratio']
+        rratio = eq_params['r_ratio']
         # Unit gap width
         if True:
             gap = {
@@ -340,7 +340,7 @@ class PhysicalModel(base_model.BaseModel):
 
         Ra = eq_params['rayleigh']
         ri, ro = (self.automatic_parameters(eq_params)['lower1d'], self.automatic_parameters(eq_params)['upper1d'])
-        rratio = eq_params['rratio']
+        rratio = eq_params['r_ratio']
         T = 1.0/eq_params['ekman']
 
         # Easy switch from nondimensionalistion by R_o (Dormy) and (R_o - R_i) (Christensen)

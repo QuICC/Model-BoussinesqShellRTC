@@ -44,6 +44,7 @@
 #include "QuICC/Io/Variable/ShellTorPolEnergyWriter.hpp"
 #include "QuICC/Io/Variable/ShellTorPolLSpectrumWriter.hpp"
 #include "QuICC/Io/Variable/ShellTorPolMSpectrumWriter.hpp"
+#include "QuICC/Io/Variable/FieldProbeWriter.hpp"
 #include "QuICC/Generator/States/RandomScalarState.hpp"
 #include "QuICC/Generator/States/RandomVectorState.hpp"
 #include "QuICC/Generator/States/ShellExactScalarState.hpp"
@@ -300,6 +301,16 @@ namespace RTC {
 
       // Create nusselt number writer
       this->enableAsciiFile<Io::Variable::ShellNusseltWriter>("temperature_nusselt", "temperature_", PhysicalNames::Temperature::id(), spSim);
+
+      // Add Velocity probe
+      std::vector<MHDFloat> pos = {1.10, Math::PI/2.0, 0};
+      auto spFile = std::make_shared<Io::Variable::FieldProbeWriter>("velocity_", spSim->ss().tag(), pos);
+      spFile->expect(PhysicalNames::Velocity::id());
+      spSim->addAsciiOutputFile(spFile);
+
+      spFile = std::make_shared<Io::Variable::FieldProbeWriter>("temperature_", spSim->ss().tag(), pos);
+      spFile->expect(PhysicalNames::Temperature::id());
+      spSim->addAsciiOutputFile(spFile);
    }
 
 }

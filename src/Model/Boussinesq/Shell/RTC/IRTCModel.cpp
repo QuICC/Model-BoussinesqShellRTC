@@ -50,6 +50,7 @@
 #include "QuICC/Generator/States/ShellExactScalarState.hpp"
 #include "QuICC/Generator/States/ShellExactVectorState.hpp"
 #include "QuICC/Generator/States/Kernels/Shell/BenchmarkTempC1.hpp"
+#include "QuICC/Generator/States/Kernels/Shell/ScalarYllPerturbation.hpp"
 #include "QuICC/Generator/Visualizers/ScalarFieldVisualizer.hpp"
 #include "QuICC/Generator/Visualizers/VectorFieldVisualizer.hpp"
 #include "QuICC/Generator/Visualizers/SphericalVerticalFieldVisualizer.hpp"
@@ -123,8 +124,8 @@ namespace RTC {
             {
                auto ri = spScalar->eqParams().nd(NonDimensional::Lower1d::id());
                auto ro = spScalar->eqParams().nd(NonDimensional::Upper1d::id());
-               auto spKernel = std::make_shared<Physical::Kernel::Shell::BenchmarkTempC1>();
-               spKernel->init(ri, ro);
+               auto spKernel = std::make_shared<Physical::Kernel::Shell::ScalarYllPerturbation>();
+               spKernel->init(ri, ro, 1./5., 4);
                spScalar->setPhysicalKernel(spKernel);
             }
             break;
@@ -136,6 +137,15 @@ namespace RTC {
                spKernel->setRatio(ratios);
                spKernel->init(-1e-4, 1e-4);
                spScalar->setSrcKernel(spKernel);
+            }
+            break;
+         case 5:
+            {
+               auto ri = spScalar->eqParams().nd(NonDimensional::Lower1d::id());
+               auto ro = spScalar->eqParams().nd(NonDimensional::Upper1d::id());
+               auto spKernel = std::make_shared<Physical::Kernel::Shell::ScalarYllPerturbation>();
+               spKernel->init(ri, ro, 1./5., 26);
+               spScalar->setPhysicalKernel(spKernel);
             }
             break;
       }

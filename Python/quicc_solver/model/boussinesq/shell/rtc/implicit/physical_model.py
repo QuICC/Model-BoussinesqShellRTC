@@ -33,16 +33,17 @@ class PhysicalModel(base_model.BaseModel):
                 "cfl_inertial":0.1*E
                 }
 
+        rratio = eq_params['r_ratio']
         # Unit gap width
         if True:
             gap = {
-                    "lower1d":eq_params["r_ratio"]/(1.0 - eq_params["r_ratio"]),
-                    "upper1d":1.0/(1.0 - eq_params["r_ratio"])
+                    "lower1d":rratio/(1.0 - rratio),
+                    "upper1d":1.0/(1.0 - rratio)
                     }
         # Unit radius
         else:
             gap = {
-                    "lower1d":eq_params["r_ratio"],
+                    "lower1d":rratio,
                     "upper1d":1.0
                     }
 

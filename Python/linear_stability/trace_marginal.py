@@ -149,7 +149,7 @@ if rescale:
     Ek = (Ta*(1.0-rratio)**4)**-0.5
 else:
     Ek = Ta**-0.5
-eq_params = {'ekman':Ek, 'prandtl':1, 'rayleigh':Ra, 'r_ratio':rratio, 'heating':heating}
+eq_params = {'ekman':Ek, 'prandtl':Pr, 'rayleigh':Ra, 'r_ratio':rratio, 'heating':heating}
 eq_params.update(model.automatic_parameters(eq_params))
 bcs = {'bcType':model.SOLVER_HAS_BC, 'velocity':bc_vel, 'temperature':bc_temp}
 

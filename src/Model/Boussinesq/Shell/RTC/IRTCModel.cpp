@@ -124,8 +124,8 @@ namespace RTC {
             {
                auto ri = spScalar->eqParams().nd(NonDimensional::Lower1d::id());
                auto ro = spScalar->eqParams().nd(NonDimensional::Upper1d::id());
-               auto spKernel = std::make_shared<Physical::Kernel::Shell::ScalarYllPerturbation>();
-               spKernel->init(ri, ro, 1./5., 4);
+               auto spKernel = std::make_shared<Physical::Kernel::Shell::BenchmarkTempC1>();
+               spKernel->init(ri, ro);
                spScalar->setPhysicalKernel(spKernel);
             }
             break;
@@ -318,6 +318,7 @@ namespace RTC {
       spFile->expect(PhysicalNames::Velocity::id());
       spSim->addAsciiOutputFile(spFile);
 
+      // Add Temperature probe
       spFile = std::make_shared<Io::Variable::FieldProbeWriter>("temperature_", spSim->ss().tag(), pos);
       spFile->expect(PhysicalNames::Temperature::id());
       spSim->addAsciiOutputFile(spFile);

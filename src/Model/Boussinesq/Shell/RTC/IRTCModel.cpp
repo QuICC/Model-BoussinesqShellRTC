@@ -144,7 +144,9 @@ namespace RTC {
                auto ri = spScalar->eqParams().nd(NonDimensional::Lower1d::id());
                auto ro = spScalar->eqParams().nd(NonDimensional::Upper1d::id());
                auto spKernel = std::make_shared<Physical::Kernel::Shell::ScalarYllPerturbation>();
-               spKernel->init(ri, ro, 1./5., 26);
+               const MHDFloat eps = 1./5;
+               const int m = 26;
+               spKernel->init(ri, ro, eps, m);
                spScalar->setPhysicalKernel(spKernel);
             }
             break;
@@ -312,16 +314,29 @@ namespace RTC {
       // Create nusselt number writer
       this->enableAsciiFile<Io::Variable::ShellNusseltWriter>("temperature_nusselt", "temperature_", PhysicalNames::Temperature::id(), spSim);
 
+      // Examples of physical space field probes
+      //
+
+      const bool probeVelocity = false;
+      const bool probeTemperature = false;
+
       // Add Velocity probe
-      std::vector<MHDFloat> pos = {1.10, Math::PI/2.0, 0};
-      auto spFile = std::make_shared<Io::Variable::FieldProbeWriter>("velocity_", spSim->ss().tag(), pos);
-      spFile->expect(PhysicalNames::Velocity::id());
-      spSim->addAsciiOutputFile(spFile);
+      if(probeVelocity)
+      {
+         const std::vector<MHDFloat> pos = {1.10, Math::PI/2.0, 0};
+         auto spFile = std::make_shared<Io::Variable::FieldProbeWriter>("velocity_", spSim->ss().tag(), pos);
+         spFile->expect(PhysicalNames::Velocity::id());
+         spSim->addAsciiOutputFile(spFile);
+      }
 
       // Add Temperature probe
-      spFile = std::make_shared<Io::Variable::FieldProbeWriter>("temperature_", spSim->ss().tag(), pos);
-      spFile->expect(PhysicalNames::Temperature::id());
-      spSim->addAsciiOutputFile(spFile);
+      if(probeTemperature)
+      {
+         const std::vector<MHDFloat> pos = {1.10, Math::PI/2.0, 0};
+         auto spFile = std::make_shared<Io::Variable::FieldProbeWriter>("temperature_", spSim->ss().tag(), pos);
+         spFile->expect(PhysicalNames::Temperature::id());
+         spSim->addAsciiOutputFile(spFile);
+      }
    }
 
 }

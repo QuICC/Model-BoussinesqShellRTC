@@ -91,7 +91,6 @@ namespace RTC {
       // Add temperature to requirements: is scalar?, need spectral?, need physical?, need diff?
       auto& tempReq = this->mRequirements.addField(PhysicalNames::Temperature::id(), FieldRequirement(true, ss.spectral(), ss.physical()));
       tempReq.enableSpectral();
-      tempReq.enablePhysical();
       tempReq.enableGradient();
 
       // Add velocity to requirements: is scalar?, need spectral?, need physical?, need diff?(, need curl?)

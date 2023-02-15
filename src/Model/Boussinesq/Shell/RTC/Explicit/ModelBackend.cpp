@@ -41,6 +41,7 @@
 #include "QuICC/Resolutions/Tools/IndexCounter.hpp"
 #include "QuICC/Equations/CouplingIndexType.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Id.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2SphLapl.hpp"
@@ -55,6 +56,7 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/R1D1DivR1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/InsulatingShell.hpp"
 
+#include <iostream>
 namespace QuICC {
 
 namespace Model {
@@ -110,7 +112,7 @@ namespace Explicit {
    std::map<std::string,MHDFloat> ModelBackend::automaticParameters(const std::map<std::string,MHDFloat>& cfg) const
    {
       auto E = cfg.find(NonDimensional::Ekman().tag())->second;
-      auto riro = cfg.find(NonDimensional::RRatio().tag())->second;
+      auto rratio = cfg.find(NonDimensional::RRatio().tag())->second;
 
       std::map<std::string,MHDFloat> params = {
          {NonDimensional::CflInertial().tag(), 0.1*E}
@@ -119,13 +121,13 @@ namespace Explicit {
       bool useGapWidth = true;
       if(useGapWidth)
       {
-         params.emplace(NonDimensional::Lower1d::id(), riro/(1.0 - riro));
-         params.emplace(NonDimensional::Upper1d::id(), 1.0/(1.0 - riro));
+         params.emplace(NonDimensional::Lower1d().tag(), rratio/(1.0 - rratio));
+         params.emplace(NonDimensional::Upper1d().tag(), 1.0/(1.0 - rratio));
       }
       else
       {
-         params.emplace(NonDimensional::Lower1d::id(), riro);
-         params.emplace(NonDimensional::Upper1d::id(), 1.0);
+         params.emplace(NonDimensional::Lower1d().tag(), rratio);
+         params.emplace(NonDimensional::Upper1d().tag(), 1.0);
       }
 
       return params;
@@ -134,6 +136,32 @@ namespace Explicit {
    ModelBackend::SpectralFieldIds ModelBackend::implicitFields(const SpectralFieldId& fId) const
    {
       SpectralFieldIds fields = {fId};
+
+      return fields;
+   }
+
+   ModelBackend::SpectralFieldIds ModelBackend::explicitLinearFields(const SpectralFieldId& fId) const
+   {
+      SpectralFieldIds fields;
+      if(fId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
+      {
+         fields.push_back(std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR));
+      }
+      else if(fId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
+      {
+         fields.push_back(std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL));
+      }
+
+      return fields;
+   }
+
+   ModelBackend::SpectralFieldIds ModelBackend::explicitNonlinearFields(const SpectralFieldId& fId) const
+   {
+      SpectralFieldIds fields;
+      if(fId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
+      {
+         fields.push_back(std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR));
+      }
 
       return fields;
    }
@@ -147,10 +175,10 @@ namespace Explicit {
       im = this->implicitFields(fId);
 
       // Explicit linear terms
-      exL.clear();
+      exL = this->explicitLinearFields(fId);
 
       // Explicit nonlinear terms
-      exNL.clear();
+      exNL = this->explicitNonlinearFields(fId);
 
       // Explicit nextstep terms
       exNS.clear();
@@ -316,7 +344,6 @@ namespace Explicit {
    void ModelBackend::applyGalerkinStencil(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
       assert(eigs.size() == 1);
-      int l = eigs.at(0);
 
       auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
 
@@ -334,7 +361,6 @@ namespace Explicit {
    void ModelBackend::applyTau(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
       assert(eigs.size() == 1);
-      int l = eigs.at(0);
 
       auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
 
@@ -562,18 +588,74 @@ namespace Explicit {
 #endif
    }
 
-   void ModelBackend::explicitBlock(DecoupledZSparse& mat, const SpectralFieldId& fId, const std::size_t opId,  const SpectralFieldId fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   void ModelBackend::explicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const std::size_t opId,  const SpectralFieldId colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
+      assert(eigs.size() == 1);
+      int l = eigs.at(0);
+
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+
+      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
       // Explicit linear operator
       if(opId == ModelOperator::ExplicitLinear::id())
       {
-         // Nothing to be done
-         throw std::logic_error("There are no explicit linear operators");
+         if(rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL) &&
+               colId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
+         {
+            auto Ra = effectiveRa(nds);
+
+            SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nN, nN, ri, ro);
+            decMat.real() = Ra*spasm.mat();
+         }
+         else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && 
+               colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
+         {
+            auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
+            auto bg = effectiveBg(nds);
+            auto dl = static_cast<MHDFloat>(l);
+            auto ll1 = dl*(dl + 1.0);
+
+            if(heatingMode == 0)
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
+               decMat.real() = -bg*ll1*spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I2 spasm(nN, nN, ri, ro);
+               decMat.real() = -bg*ll1*spasm.mat();
+            }
+         }
+         else
+         {
+            // Nothing to be done
+            throw std::logic_error("There are no explicit linear operators");
+         }
       }
       // Explicit nonlinear operator
       else if(opId == ModelOperator::ExplicitNonlinear::id())
       {
-         throw std::logic_error("There are no explicit nonlinear operators");
+         if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && rowId == colId)
+         {
+            auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
+
+            if(heatingMode == 0)
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
+               decMat.real() = spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nN, nN, ri, ro);
+               decMat.real() = spasm.mat();
+            }
+         }
+         else
+         {
+            throw std::logic_error("There are no explicit nonlinear operators");
+         }
       }
       // Explicit nextstep operator
       else if(opId == ModelOperator::ExplicitNextstep::id())
@@ -581,6 +663,48 @@ namespace Explicit {
          throw std::logic_error("There are no explicit nextstep operators");
       }
    }
+
+   MHDFloat ModelBackend::effectiveRa(const NonDimensional::NdMap& nds) const
+   {
+      auto effRa = nds.find(NonDimensional::Rayleigh::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
+      // Scaled on gap width
+      if(ro != 1.0)
+      {
+         auto T = 1.0/nds.find(NonDimensional::Ekman::id())->second->value();
+         effRa *= T/ro;
+      }
+
+      return effRa;
+   }
+
+   MHDFloat ModelBackend::effectiveBg(const NonDimensional::NdMap& nds) const
+   {
+      MHDFloat effBg = 1.0;
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+      auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
+      auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
+
+      if(ro == 1.0)
+      {
+         // Nothing
+         //
+      }
+      // gap width and internal heating
+      else if(heatingMode == 0)
+      {
+         effBg = 2.0/(ro*(1.0 + rratio));
+      }
+      // gap width and differential heating
+      else if(heatingMode == 1)
+      {
+         effBg = ro*ro*rratio;
+      }
+
+      return effBg;
+   }
+
 
 } // Explicit
 } // RTC

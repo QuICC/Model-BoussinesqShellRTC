@@ -99,9 +99,19 @@ namespace Explicit {
 
       protected:
          /**
-          * @brief Build model matrix
+          * @brief Set field coupling in implicit model matrix
           */
          SpectralFieldIds implicitFields(const SpectralFieldId& fId) const;
+
+         /**
+          * @brief Set field coupling in explicit linear terms
+          */
+         SpectralFieldIds explicitLinearFields(const SpectralFieldId& fId) const;
+
+         /**
+          * @brief Set field coupling in explicit nonlinear terms
+          */
+         SpectralFieldIds explicitNonlinearFields(const SpectralFieldId& fId) const;
 
          /**
           * @brief Get operator information
@@ -132,6 +142,16 @@ namespace Explicit {
           * @brief Apply tau line for boundary condition
           */
          void applyTau(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
+
+         /**
+          * @brief Compute effective Rayleigh number
+          */
+         MHDFloat effectiveRa(const NonDimensional::NdMap& nds) const;
+
+         /**
+          * @brief Compute effective thermal backgroundn
+          */
+         MHDFloat effectiveBg(const NonDimensional::NdMap& nds) const;
 
       private:
          /**

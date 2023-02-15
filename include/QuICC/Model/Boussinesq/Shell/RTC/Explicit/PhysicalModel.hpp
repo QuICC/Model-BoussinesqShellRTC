@@ -47,7 +47,12 @@ namespace Explicit {
          virtual ~PhysicalModel() = default;
 
          /// Python script/module name
-         virtual std::string PYMODULE() override;
+         virtual std::string PYMODULE() final;
+
+         /**
+          * @brief Initialize specialized backend
+          */
+         void init() final;
 
       protected:
 

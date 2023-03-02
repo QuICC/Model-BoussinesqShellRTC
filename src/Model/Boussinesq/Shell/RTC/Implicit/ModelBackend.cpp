@@ -6,7 +6,6 @@
 // System includes
 //
 #include <stdexcept>
-#include <unsupported/Eigen/SparseExtra>
 
 // Project includes
 //
@@ -57,10 +56,6 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/R1D1DivR1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/InsulatingShell.hpp"
 #include "QuICC/Math/Constants.hpp"
-
-#define QUICC_OUTPUT_IMPLICIT_MATRIX
-#define QUICC_OUTPUT_TIME_MATRIX
-#define QUICC_OUTPUT_BOUNDARY_MATRIX
 
 #include <iostream>
 namespace QuICC {
@@ -423,15 +418,6 @@ namespace Implicit {
       {
          throw std::logic_error("Equations are not setup properly");
       }
-
-#ifdef QUICC_OUTPUT_IMPLICIT_MATRIX
-      std::stringstream ss;
-      ss << "_" << matIdx;
-      std::string matName = "implicit_block_re" + ss.str() + ".mtx";
-      Eigen::saveMarket(decMat.real(), matName);
-      matName = "implicit_block_im" + ss.str() + ".mtx";
-      Eigen::saveMarket(decMat.imag(), matName);
-#endif
    }
 
    void ModelBackend::timeBlock(DecoupledZSparse& decMat, const SpectralFieldId& fieldId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
@@ -520,15 +506,6 @@ namespace Implicit {
             shift += nN;
          }
       }
-
-#ifdef QUICC_OUTPUT_TIME_MATRIX
-      std::stringstream ss;
-      ss << "_" << matIdx;
-      std::string matName = "time_block_re" + ss.str() + ".mtx";
-      Eigen::saveMarket(decMat.real(), matName);
-      matName = "time_block_im" + ss.str() + ".mtx";
-      Eigen::saveMarket(decMat.imag(), matName);
-#endif
    }
 
    void ModelBackend::boundaryBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
@@ -591,15 +568,6 @@ namespace Implicit {
             colShift += nN;
          }
       }
-
-#ifdef QUICC_OUTPUT_BOUNDARY_MATRIX
-      std::stringstream ss;
-      ss << "_" << matIdx;
-      std::string matName = "boundary_block_re" + ss.str() + ".mtx";
-      Eigen::saveMarket(decMat.real(), matName);
-      matName = "boundary_block_im" + ss.str() + ".mtx";
-      Eigen::saveMarket(decMat.imag(), matName);
-#endif
    }
 
    void ModelBackend::applyGalerkinStencil(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const

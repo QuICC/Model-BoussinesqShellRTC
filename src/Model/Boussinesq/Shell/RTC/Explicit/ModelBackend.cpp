@@ -56,7 +56,6 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/R1D1DivR1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/InsulatingShell.hpp"
 
-#include <iostream>
 namespace QuICC {
 
 namespace Model {

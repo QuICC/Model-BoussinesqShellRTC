@@ -1,6 +1,6 @@
 /**
  * @file ModelBackend.hpp
- * @brief Model backend
+ * @brief Model backend with explicit treatment of the Coriolis term
  */
 
 #ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_EXPLICIT_MODELBACKEND_HPP

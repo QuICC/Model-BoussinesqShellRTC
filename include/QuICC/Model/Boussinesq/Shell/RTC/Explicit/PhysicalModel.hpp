@@ -59,11 +59,11 @@ namespace Explicit {
       private:
    };
 
-}
-}
-}
-}
-}
-}
+} // Explicit
+} // RTC
+} // Shell
+} // Boussinesq
+} // Model
+} // QuICC
 
 #endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_EXPLICIT_PHYSICALMODEL_HPP

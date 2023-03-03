@@ -42,10 +42,14 @@
 #include "QuICC/Equations/CouplingIndexType.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Id.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2D1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3SphLapl.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y3.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4D1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl2.hpp"
@@ -315,17 +319,50 @@ namespace Implicit {
          }
          else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
          {
+            auto coriolis = [](const int l, const int m){
+               return (l - 1.0)*(l + 1.0)*precision::sqrt(((l - m)*(l + m))/((2.0*l - 1.0)*(2.0*l + 1.0)));
+            };
+
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
             const auto T = 1.0/Ek;
-            for(int l = m; l < nL; l++)
+            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
+            rowShift = baseRowShift + nN;
+            colShift = baseColShift;
+            for(int l = m+1; l < nL; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
                if(l > 0)
                {
                   const auto dl = static_cast<MHDFloat>(l);
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
-                  SparseSM::Chebyshev::LinearMap::I2Y2SphLapl i2r2cor(nN, nN, ri, ro, l);
-                  this->addBlock(decMat.real(), i2r2cor.mat(), rowShift, colShift, -T*invlapl);
+                  SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
+                  auto norm = (dl - 1.0)*coriolis(l, m);
+                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, -norm*T*invlapl);
+
+                  SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
+                  norm = -coriolis(l, m);
+                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, -norm*T*invlapl);
+               }
+               rowShift += nN;
+               colShift += nN;
+            }
+            nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
+            rowShift = baseRowShift;
+            colShift = baseColShift + nN;
+            for(int l = m; l < nL - 1; l++)
+            {
+               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+               if(l > 0)
+               {
+                  const auto dl = static_cast<MHDFloat>(l);
+                  const auto invlapl = 1.0/(dl*(dl + 1.0));
+                  SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
+                  auto norm = -(dl + 2.0)*coriolis(l+1, m);
+                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, -norm*T*invlapl);
+
+                  SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
+                  norm = -coriolis(l+1, m);
+                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, -norm*T*invlapl);
                }
                rowShift += nN;
                colShift += nN;
@@ -357,17 +394,48 @@ namespace Implicit {
          }
          else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR))
          {
+            auto coriolis = [](const int l, const int m){
+               return (l - 1.0)*(l + 1.0)*precision::sqrt(((l - m)*(l + m))/((2.0*l - 1.0)*(2.0*l + 1.0)));
+            };
+
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
             const auto T = 1.0/Ek;
-            for(int l = m; l < nL; l++)
+            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
+            rowShift = baseRowShift + nN;
+            colShift = baseColShift;
+            for(int l = m+1; l < nL; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
                if(l > 0)
                {
                   const auto dl = static_cast<MHDFloat>(l);
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
-                  SparseSM::Chebyshev::LinearMap::I4Y4SphLapl2 i4r4cor(nN, nN, ri, ro, l);
-                  this->addBlock(decMat.real(), i4r4cor.mat(), rowShift, colShift, T*invlapl);
+                  SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
+                  auto norm = (dl - 1.0)*coriolis(l, m);
+                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, norm*T*invlapl);
+                  SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
+                  norm = -coriolis(l, m);
+                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, norm*T*invlapl);
+               }
+               rowShift += nN;
+               colShift += nN;
+            }
+            nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
+            rowShift = baseRowShift;
+            colShift = baseColShift + nN;
+            for(int l = m; l < nL - 1; l++)
+            {
+               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+               if(l > 0)
+               {
+                  const auto dl = static_cast<MHDFloat>(l);
+                  const auto invlapl = 1.0/(dl*(dl + 1.0));
+                  SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
+                  auto norm = -(dl + 2.0)*coriolis(l+1, m);
+                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, norm*T*invlapl);
+                  SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
+                  norm = -coriolis(l+1, m);
+                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, norm*T*invlapl);
                }
                rowShift += nN;
                colShift += nN;

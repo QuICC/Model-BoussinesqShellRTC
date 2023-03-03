@@ -55,6 +55,11 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/D2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/R1D1DivR1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/InsulatingShell.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/Value.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/D1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/R1D1DivR1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD2.hpp"
 
 namespace QuICC {
 
@@ -69,67 +74,8 @@ namespace RTC {
 namespace Explicit {
 
    ModelBackend::ModelBackend()
-      : IModelBackend(), mUseGalerkin(false)
+      : IRTCBackend()
    {
-   }
-
-   std::vector<std::string> ModelBackend::fieldNames() const
-   {
-      std::vector<std::string> names = {
-         PhysicalNames::Velocity().tag(),
-         PhysicalNames::Temperature().tag()
-      };
-
-      return names;
-   }
-
-   std::vector<std::string> ModelBackend::paramNames() const
-   {
-      std::vector<std::string> names = {
-         NonDimensional::Prandtl().tag(),
-         NonDimensional::Rayleigh().tag(),
-         NonDimensional::Ekman().tag(),
-         NonDimensional::Heating().tag(),
-         NonDimensional::RRatio().tag()
-      };
-
-      return names;
-   }
-
-   std::vector<bool> ModelBackend::isPeriodicBox() const
-   {
-      std::vector<bool> periodic = {false, false, false};
-
-      return periodic;
-   }
-
-   void ModelBackend::enableGalerkin(const bool flag)
-   {
-      this->mUseGalerkin = flag;
-   }
-
-   std::map<std::string,MHDFloat> ModelBackend::automaticParameters(const std::map<std::string,MHDFloat>& cfg) const
-   {
-      auto E = cfg.find(NonDimensional::Ekman().tag())->second;
-      auto rratio = cfg.find(NonDimensional::RRatio().tag())->second;
-
-      std::map<std::string,MHDFloat> params = {
-         {NonDimensional::CflInertial().tag(), 0.1*E}
-      };
-
-      bool useGapWidth = true;
-      if(useGapWidth)
-      {
-         params.emplace(NonDimensional::Lower1d().tag(), rratio/(1.0 - rratio));
-         params.emplace(NonDimensional::Upper1d().tag(), 1.0/(1.0 - rratio));
-      }
-      else
-      {
-         params.emplace(NonDimensional::Lower1d().tag(), rratio);
-         params.emplace(NonDimensional::Upper1d().tag(), 1.0);
-      }
-
-      return params;
    }
 
    ModelBackend::SpectralFieldIds ModelBackend::implicitFields(const SpectralFieldId& fId) const
@@ -192,7 +138,7 @@ namespace Explicit {
       tN = nN;
 
       int shiftR;
-      if(this->mUseGalerkin)
+      if(this->useGalerkin())
       {
          if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR) ||
                fId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
@@ -437,7 +383,7 @@ namespace Explicit {
       // Time operator
       if(opId == ModelOperator::Time::id())
       {
-         bool needStencil = (this->mUseGalerkin && bcType == ModelOperatorBoundary::SolverNoTau::id());
+         bool needStencil = (this->useGalerkin() && bcType == ModelOperatorBoundary::SolverNoTau::id());
          bool needTau = bcType == ModelOperatorBoundary::SolverHasBc::id();
 
          for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
@@ -458,7 +404,7 @@ namespace Explicit {
       // Linear operator
       else if(opId == ModelOperator::ImplicitLinear::id())
       {
-         bool needStencil = (this->mUseGalerkin && bcType == ModelOperatorBoundary::SolverNoTau::id());
+         bool needStencil = (this->useGalerkin() && bcType == ModelOperatorBoundary::SolverNoTau::id());
          bool needTau = bcType == ModelOperatorBoundary::SolverHasBc::id();
 
          for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
@@ -482,7 +428,7 @@ namespace Explicit {
       // Boundary operator
       else if(opId == ModelOperator::Boundary::id())
       {
-         bool needStencil = this->mUseGalerkin;
+         bool needStencil = this->useGalerkin();
          bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
 
          auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
@@ -513,28 +459,27 @@ namespace Explicit {
 
    void ModelBackend::galerkinStencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      throw std::logic_error("Not yet implemented!");
-      
-#if 0
       assert(eigs.size() == 1);
-      int l = eigs.at(0);
 
       auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
 
       auto bcId = bcs.find(fieldId.first)->second;
 
+      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
       int s = 0;
       if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR))
       {
-         s = 1;
+         s = 2;
          if(bcId == Bc::Name::NoSlip::id())
          {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-1, a, b, l);
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
             mat = bc.mat();
          }
          else if(bcId == Bc::Name::StressFree::id())
          {
-            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-1, a, b, l);
+            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-s, ri, ro);
             mat = bc.mat();
          }
          else
@@ -544,15 +489,15 @@ namespace Explicit {
       }
       else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
       {
-         s = 2;
+         s = 4;
          if(bcId == Bc::Name::NoSlip::id())
          {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-2, a, b, l);
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-s, ri, ro);
             mat = bc.mat();
          }
          else if(bcId == Bc::Name::StressFree::id())
          {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-2, a, b, l);
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-s, ri, ro);
             mat = bc.mat();
          }
          else
@@ -562,15 +507,15 @@ namespace Explicit {
       }
       else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
       {
-         s = 1;
+         s = 2;
          if(bcId == Bc::Name::FixedTemperature::id())
          {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-1, a, b, l);
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
             mat = bc.mat();
          }
          else if(bcId == Bc::Name::FixedFlux::id())
          {
-            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-1, a, b, l);
+            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-s, ri, ro);
             mat = bc.mat();
          }
          else
@@ -581,10 +526,9 @@ namespace Explicit {
 
       if(makeSquare)
       {
-         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, a, b, l);
+         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro);
          mat = qId.mat()*mat;
       }
-#endif
    }
 
    void ModelBackend::explicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const std::size_t opId,  const SpectralFieldId colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
@@ -597,12 +541,14 @@ namespace Explicit {
       auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
       auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
 
+      int s = 0;
       // Explicit linear operator
       if(opId == ModelOperator::ExplicitLinear::id())
       {
          if(rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL) &&
                colId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
          {
+            s = 4;
             auto Ra = effectiveRa(nds);
 
             SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nN, nN, ri, ro);
@@ -611,6 +557,7 @@ namespace Explicit {
          else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && 
                colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
          {
+            s = 2;
             auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
             auto bg = effectiveBg(nds);
             auto dl = static_cast<MHDFloat>(l);
@@ -638,6 +585,7 @@ namespace Explicit {
       {
          if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && rowId == colId)
          {
+            s = 2;
             auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
 
             if(heatingMode == 0)
@@ -661,49 +609,13 @@ namespace Explicit {
       {
          throw std::logic_error("There are no explicit nextstep operators");
       }
+
+      if(this->useGalerkin())
+      {
+         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro, 0, s);
+         decMat.real() = qId.mat()*decMat.real();
+      }
    }
-
-   MHDFloat ModelBackend::effectiveRa(const NonDimensional::NdMap& nds) const
-   {
-      auto effRa = nds.find(NonDimensional::Rayleigh::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      // Scaled on gap width
-      if(ro != 1.0)
-      {
-         auto T = 1.0/nds.find(NonDimensional::Ekman::id())->second->value();
-         effRa *= T/ro;
-      }
-
-      return effRa;
-   }
-
-   MHDFloat ModelBackend::effectiveBg(const NonDimensional::NdMap& nds) const
-   {
-      MHDFloat effBg = 1.0;
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-      auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
-      auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
-
-      if(ro == 1.0)
-      {
-         // Nothing
-         //
-      }
-      // gap width and internal heating
-      else if(heatingMode == 0)
-      {
-         effBg = 2.0/(ro*(1.0 + rratio));
-      }
-      // gap width and differential heating
-      else if(heatingMode == 1)
-      {
-         effBg = ro*ro*rratio;
-      }
-
-      return effBg;
-   }
-
 
 } // Explicit
 } // RTC

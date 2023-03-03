@@ -15,7 +15,7 @@
 
 // Project includes
 //
-#include "QuICC/Model/IModelBackend.hpp"
+#include "QuICC/Model/Boussinesq/Shell/RTC/IRTCBackend.hpp"
 
 namespace QuICC {
 
@@ -32,7 +32,7 @@ namespace Implicit {
    /**
     * @brief Interface for model backend
     */
-   class ModelBackend: public IModelBackend
+   class ModelBackend: public IRTCBackend
    {
       public:
          /**
@@ -44,33 +44,6 @@ namespace Implicit {
           * @brief Destructor
           */
          virtual ~ModelBackend() = default;
-
-         /**
-          * @brief Get vector of names for the physical fields
-          */
-         virtual std::vector<std::string> fieldNames() const override;
-
-         /**
-          * @brief Get vector of names for the nondimensional parameters
-          */
-         virtual std::vector<std::string> paramNames() const override;
-
-         /**
-          * @brief Get vector of bools about periodic box
-          */
-         virtual std::vector<bool> isPeriodicBox() const override;
-
-         /**
-          * @brief Enable galerkin basis
-          */
-         virtual void enableGalerkin(const bool flag) override;
-
-         /**
-          * @brief Get auotmatically computed parameters based on input parameters
-          *
-          * @param cfg  Input parameters
-          */
-         virtual std::map<std::string,MHDFloat> automaticParameters(const std::map<std::string,MHDFloat>& cfg) const override;
 
          /**
           * @brief Get equation information
@@ -148,16 +121,6 @@ namespace Implicit {
           */
          void applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
 
-         /**
-          * @brief Compute effective Rayleigh number
-          */
-         MHDFloat effectiveRa(const NonDimensional::NdMap& nds) const;
-
-         /**
-          * @brief Compute effective thermal backgroundn
-          */
-         MHDFloat effectiveBg(const NonDimensional::NdMap& nds) const;
-
       private:
          /**
           * @brief Add block matrix to full system matrix
@@ -168,11 +131,6 @@ namespace Implicit {
           * @brief Compute size information of full system
           */
          std::tuple<int,int,int, int> systemSize(const SpectralFieldId& colId, const SpectralFieldId& rowId, const int m, const Resolution& res) const;
-
-         /**
-          * @brief Use Galerkin basis?
-          */
-         bool mUseGalerkin;
    };
 
 } // Implicit

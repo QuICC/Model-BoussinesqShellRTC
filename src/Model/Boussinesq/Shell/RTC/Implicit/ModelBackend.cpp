@@ -75,67 +75,8 @@ namespace RTC {
 namespace Implicit {
 
    ModelBackend::ModelBackend()
-      : IModelBackend(), mUseGalerkin(false)
+      : IRTCBackend()
    {
-   }
-
-   std::vector<std::string> ModelBackend::fieldNames() const
-   {
-      std::vector<std::string> names = {
-         PhysicalNames::Velocity().tag(),
-         PhysicalNames::Temperature().tag()
-      };
-
-      return names;
-   }
-
-   std::vector<std::string> ModelBackend::paramNames() const
-   {
-      std::vector<std::string> names = {
-         NonDimensional::Prandtl().tag(),
-         NonDimensional::Rayleigh().tag(),
-         NonDimensional::Ekman().tag(),
-         NonDimensional::Heating().tag(),
-         NonDimensional::RRatio().tag()
-      };
-
-      return names;
-   }
-
-   std::vector<bool> ModelBackend::isPeriodicBox() const
-   {
-      std::vector<bool> periodic = {false, false, false};
-
-      return periodic;
-   }
-
-   void ModelBackend::enableGalerkin(const bool flag)
-   {
-      this->mUseGalerkin = flag;
-   }
-
-   std::map<std::string,MHDFloat> ModelBackend::automaticParameters(const std::map<std::string,MHDFloat>& cfg) const
-   {
-      auto E = cfg.find(NonDimensional::Ekman().tag())->second;
-      auto rratio = cfg.find(NonDimensional::RRatio().tag())->second;
-
-      std::map<std::string,MHDFloat> params = {
-         {NonDimensional::CflInertial().tag(), 0.1*E}
-      };
-
-      bool useGapWidth = true;
-      if(useGapWidth)
-      {
-         params.emplace(NonDimensional::Lower1d().tag(), rratio/(1.0 - rratio));
-         params.emplace(NonDimensional::Upper1d().tag(), 1.0/(1.0 - rratio));
-      }
-      else
-      {
-         params.emplace(NonDimensional::Lower1d().tag(), rratio);
-         params.emplace(NonDimensional::Upper1d().tag(), 1.0);
-      }
-
-      return params;
    }
 
    ModelBackend::SpectralFieldIds ModelBackend::implicitFields(const SpectralFieldId& fId) const
@@ -197,7 +138,7 @@ namespace Implicit {
       tN = nN;
 
       int shiftR;
-      if(this->mUseGalerkin)
+      if(this->useGalerkin())
       {
          if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR) ||
                fId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
@@ -266,7 +207,7 @@ namespace Implicit {
 
    void ModelBackend::implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      bool needStencil = (this->mUseGalerkin && bcType == ModelOperatorBoundary::SolverNoTau::id());
+      bool needStencil = (this->useGalerkin() && bcType == ModelOperatorBoundary::SolverNoTau::id());
       bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
 
       assert(eigs.size() == 1);
@@ -490,7 +431,7 @@ namespace Implicit {
 
    void ModelBackend::timeBlock(DecoupledZSparse& decMat, const SpectralFieldId& fieldId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      bool needStencil = (this->mUseGalerkin && bcType == ModelOperatorBoundary::SolverNoTau::id());
+      bool needStencil = (this->useGalerkin() && bcType == ModelOperatorBoundary::SolverNoTau::id());
       bool needTau = bcType == ModelOperatorBoundary::SolverHasBc::id();
 
       assert(eigs.size() == 1);
@@ -578,7 +519,7 @@ namespace Implicit {
 
    void ModelBackend::boundaryBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      bool needStencil = this->mUseGalerkin;
+      bool needStencil = this->useGalerkin();
       bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
 
       assert(eigs.size() == 1);
@@ -950,48 +891,6 @@ namespace Implicit {
       {
          throw std::logic_error("There are no explicit nextstep operators");
       }
-   }
-
-   MHDFloat ModelBackend::effectiveRa(const NonDimensional::NdMap& nds) const
-   {
-      auto effRa = nds.find(NonDimensional::Rayleigh::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      // Scaled on gap width
-      if(ro != 1.0)
-      {
-         const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
-         const auto T = 1.0/Ek;
-         effRa *= T/ro;
-      }
-
-      return effRa;
-   }
-
-   MHDFloat ModelBackend::effectiveBg(const NonDimensional::NdMap& nds) const
-   {
-      MHDFloat effBg = 1.0;
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-      auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
-      auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
-
-      if(ro == 1.0)
-      {
-         // Nothing
-         //
-      }
-      // gap width and internal heating
-      else if(heatingMode == 0)
-      {
-         effBg = 2.0/(ro*(1.0 + rratio));
-      }
-      // gap width and differential heating
-      else if(heatingMode == 1)
-      {
-         effBg = ro*ro*rratio;
-      }
-
-      return effBg;
    }
 
    void ModelBackend::addBlock(SparseMatrix& mat, const SparseMatrix& block, const int rowShift, const int colShift, const MHDFloat coeff) const

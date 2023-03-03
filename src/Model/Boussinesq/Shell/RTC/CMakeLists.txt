@@ -1,5 +1,6 @@
 quicc_target_sources(${QUICC_CURRENT_MODEL_LIB} ${QUICC_CMAKE_SRC_VISIBILITY}
   IRTCModel.cpp
+  IRTCBackend.cpp
   Momentum.cpp
   MomentumKernel.cpp
   Transport.cpp

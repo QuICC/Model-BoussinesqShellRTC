@@ -103,11 +103,6 @@ namespace Implicit {
          SpectralFieldIds explicitNonlinearFields(const SpectralFieldId& fId) const;
 
          /**
-          * @brief Get operator block information
-          */
-         void blockInfo(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const MHDFloat l, const BcMap& bcs) const;
-
-         /**
           * @brief Build implicit matrix block
           */
          void implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
@@ -126,21 +121,6 @@ namespace Implicit {
           * @brief Apply boundary condition
           */
          void applyBoundary(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
-
-         /**
-          * @brief Apply galerkin stencil for boundary condition
-          */
-         void applyGalerkinStencil(SparseMatrix& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
-
-         /**
-          * @brief Apply tau line for boundary condition
-          */
-         void applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
-
-         /**
-          * @brief Boundary condition stencil
-          */
-         virtual void stencil(SparseMatrix& mat, const SpectralFieldId& fId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
 
       private:
          /**

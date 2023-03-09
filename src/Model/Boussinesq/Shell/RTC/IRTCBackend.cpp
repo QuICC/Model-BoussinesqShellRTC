@@ -181,6 +181,215 @@ namespace RTC {
       return effBg;
    }
 
+   void IRTCBackend::stencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   {
+      assert(eigs.size() == 1);
+
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+
+      auto bcId = bcs.find(fieldId.first)->second;
+
+      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
+      int s = this->nBc(fieldId);
+      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR))
+      {
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerkin boundary conditions for Velocity Toroidal component not implemented");
+         }
+      }
+      else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
+      {
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerin boundary conditions for Velocity Poloidal component not implemented");
+         }
+      }
+      else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
+      {
+         if(bcId == Bc::Name::FixedTemperature::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::FixedFlux::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerkin boundary conditions for Temperature not implemented");
+         }
+      }
+
+      if(makeSquare)
+      {
+         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro);
+         mat = qId.mat()*mat;
+      }
+   }
+
+   void IRTCBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   {
+      assert(eigs.size() == 1);
+
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+
+      auto bcId = bcs.find(rowId.first)->second;
+
+      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
+      typedef SparseSM::Chebyshev::LinearMap::Boundary::ICondition::Position Position;
+
+      SparseSM::Chebyshev::LinearMap::Boundary::Operator bcOp(nN, nN, ri, ro);
+
+      if(rowId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR) && rowId == colId)
+      {
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::R1D1DivR1>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::R1D1DivR1>(Position::BOTTOM);
+         }
+         else
+         {
+            throw std::logic_error("Boundary conditions for Velocity Toroidal component not implemented");
+         }
+      }
+      else if(rowId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL) && rowId == colId)
+      {
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::BOTTOM);
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::BOTTOM);
+         }
+         else
+         {
+            throw std::logic_error("Boundary conditions for Velocity Poloidal component not implemented");
+         }
+      }
+      else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && rowId == colId)
+      {
+         if(bcId == Bc::Name::FixedTemperature::id())
+         {
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
+         }
+         else if(bcId == Bc::Name::FixedFlux::id())
+         {
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::TOP);
+            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::BOTTOM);
+         }
+         else
+         {
+            throw std::logic_error("Boundary conditions for Temperature not implemented (" + std::to_string(bcId) + ")");
+         }
+      }
+
+      mat += bcOp.mat();
+   }
+
+   void IRTCBackend::applyGalerkinStencil(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   {
+      assert(eigs.size() == 1);
+
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+
+      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
+      auto S = mat;
+      this->stencil(S, colId, matIdx, res, eigs, false, bcs, nds);
+
+      auto s = this->nBc(rowId);
+      SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro, 0, s);
+      mat = qId.mat()*(mat*S);
+   }
+
+   int IRTCBackend::nBc(const SpectralFieldId& fId) const
+   {
+      int nBc = 0;
+
+      if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR) ||
+            fId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
+      {
+         nBc = 2;
+      }
+      else if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
+      {
+         nBc = 4;
+      }
+      else
+      {
+         nBc = 0;
+      }
+
+      return nBc;
+   }
+
+   void IRTCBackend::blockInfo(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const MHDFloat l, const BcMap& bcs) const
+   {
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+      tN = nN;
+
+      int shiftR = this->nBc(fId);
+      if(this->useGalerkin())
+      {
+         shiftR = this->nBc(fId);
+
+         gN = (nN - shiftR);
+      }
+      else
+      {
+         shiftR = 0;
+         gN = nN;
+      }
+
+      // Set galerkin shifts
+      shift(0) = shiftR;
+      shift(1) = 0;
+      shift(2) = 0;
+
+      rhs = 1;
+   }
+
 
 } // RTC
 } // Shell

@@ -134,41 +134,7 @@ namespace Explicit {
 
    void ModelBackend::blockSize(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs) const
    {
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
-      tN = nN;
-
-      int shiftR;
-      if(this->useGalerkin())
-      {
-         if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR) ||
-               fId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
-         {
-            shiftR = 2;
-         }
-         else if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
-         {
-            shiftR = 4;
-            //shiftR = 2;
-         }
-         else
-         {
-            shiftR = 0;
-         }
-
-         gN = (nN - shiftR);
-      }
-      else
-      {
-         shiftR = 0;
-         gN = nN;
-      }
-
-      // Set galerkin shifts
-      shift(0) = shiftR;
-      shift(1) = 0;
-      shift(2) = 0;
-
-      rhs = 1;
+      this->blockInfo(tN, gN, shift, rhs, fId, res, eigs.at(0), bcs);
    }
 
    void ModelBackend::operatorInfo(ArrayI& tauN, ArrayI& galN, MatrixI& galShift, ArrayI& rhsCols, ArrayI& sysN, const SpectralFieldId& fId, const Resolution& res, const Equations::Tools::ICoupling& coupling, const BcMap& bcs) const
@@ -286,97 +252,6 @@ namespace Explicit {
       }
    }
 
-   void ModelBackend::applyGalerkinStencil(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
-   {
-      assert(eigs.size() == 1);
-
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
-
-      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      auto S = decMat.real();
-      this->galerkinStencil(S, colId, matIdx, res, eigs, false, bcs, nds);
-
-      auto s = S.rows() - S.cols();
-      SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro, 0, s);
-      decMat.real() = qId.mat()*(decMat.real()*S);
-   }
-
-   void ModelBackend::applyTau(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
-   {
-      assert(eigs.size() == 1);
-
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
-
-      auto bcId = bcs.find(rowId.first)->second;
-
-      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      typedef SparseSM::Chebyshev::LinearMap::Boundary::ICondition::Position Position;
-
-      SparseSM::Chebyshev::LinearMap::Boundary::Operator bcOp(nN, nN, ri, ro);
-
-      if(rowId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR) && rowId == colId)
-      {
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::R1D1DivR1>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::R1D1DivR1>(Position::BOTTOM);
-         }
-         else
-         {
-            throw std::logic_error("Boundary conditions for Velocity Toroidal component not implemented");
-         }
-      }
-      else if(rowId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL) && rowId == colId)
-      {
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::BOTTOM);
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::BOTTOM);
-         }
-         else
-         {
-            throw std::logic_error("Boundary conditions for Velocity Poloidal component not implemented");
-         }
-      }
-      else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && rowId == colId)
-      {
-         if(bcId == Bc::Name::FixedTemperature::id())
-         {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
-         }
-         else if(bcId == Bc::Name::FixedFlux::id())
-         {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::BOTTOM);
-         }
-         else
-         {
-            throw std::logic_error("Boundary conditions for Temperature not implemented (" + std::to_string(bcId) + ")");
-         }
-      }
-
-      decMat.real() += bcOp.mat();
-   }
-
    void ModelBackend::modelMatrix(DecoupledZSparse& rModelMatrix, const std::size_t opId, const Equations::CouplingInformation::FieldId_range imRange, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
 
@@ -393,11 +268,11 @@ namespace Explicit {
             // Apply boundary condition
             if(needStencil)
             {
-               this->applyGalerkinStencil(rModelMatrix, *pRowId, *pRowId, matIdx, res, eigs, bcs, nds);
+               this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pRowId, matIdx, res, eigs, bcs, nds);
             }
             else if(needTau)
             {
-               this->applyTau(rModelMatrix, *pRowId, *pRowId, matIdx, res, eigs, bcs, nds);
+               this->applyTau(rModelMatrix.real(), *pRowId, *pRowId, matIdx, res, eigs, bcs, nds);
             }
          }
       }
@@ -416,11 +291,11 @@ namespace Explicit {
                // Apply boundary condition
                if(needStencil)
                {
-                  this->applyGalerkinStencil(rModelMatrix, *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
+                  this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
                }
                else if(needTau)
                {
-                  this->applyTau(rModelMatrix, *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
+                  this->applyTau(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
                }
             }
          }
@@ -442,11 +317,11 @@ namespace Explicit {
                // Apply boundary condition
                if(needStencil)
                {
-                  this->applyGalerkinStencil(rModelMatrix, *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
+                  this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
                }
                else if(needTau)
                {
-                  this->applyTau(rModelMatrix, *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
+                  this->applyTau(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
                }
             }
          }
@@ -459,76 +334,7 @@ namespace Explicit {
 
    void ModelBackend::galerkinStencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      assert(eigs.size() == 1);
-
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
-
-      auto bcId = bcs.find(fieldId.first)->second;
-
-      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      int s = 0;
-      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR))
-      {
-         s = 2;
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerkin boundary conditions for Velocity Toroidal component not implemented");
-         }
-      }
-      else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
-      {
-         s = 4;
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerin boundary conditions for Velocity Poloidal component not implemented");
-         }
-      }
-      else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
-      {
-         s = 2;
-         if(bcId == Bc::Name::FixedTemperature::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::FixedFlux::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerkin boundary conditions for Temperature not implemented");
-         }
-      }
-
-      if(makeSquare)
-      {
-         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro);
-         mat = qId.mat()*mat;
-      }
+      this->stencil(mat, fieldId, matIdx, res, eigs, makeSquare, bcs, nds);
    }
 
    void ModelBackend::explicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const std::size_t opId,  const SpectralFieldId colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
@@ -541,14 +347,13 @@ namespace Explicit {
       auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
       auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
 
-      int s = 0;
+      int s = this->nBc(rowId);
       // Explicit linear operator
       if(opId == ModelOperator::ExplicitLinear::id())
       {
          if(rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL) &&
                colId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
          {
-            s = 4;
             auto Ra = effectiveRa(nds);
 
             SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nN, nN, ri, ro);
@@ -557,7 +362,6 @@ namespace Explicit {
          else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && 
                colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
          {
-            s = 2;
             auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
             auto bg = effectiveBg(nds);
             auto dl = static_cast<MHDFloat>(l);
@@ -585,7 +389,6 @@ namespace Explicit {
       {
          if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && rowId == colId)
          {
-            s = 2;
             auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
 
             if(heatingMode == 0)

@@ -29,6 +29,22 @@ namespace RTC {
 
 namespace Implicit {
 
+   namespace internal {
+      struct SystemInfo
+      {
+         int systemSize;
+         int blockRows;
+         int blockCols;
+         int startRow;
+         int startCol;
+
+         SystemInfo(const int size, const int rows, const int cols, const int row, const int col)
+            : systemSize(size), blockRows(rows), blockCols(cols), startRow(row), startCol(col)
+         {
+         };
+      };
+   }
+
    /**
     * @brief Interface for model backend
     */
@@ -87,9 +103,9 @@ namespace Implicit {
          SpectralFieldIds explicitNonlinearFields(const SpectralFieldId& fId) const;
 
          /**
-          * @brief Get operator information
+          * @brief Get operator block information
           */
-         void blockSize(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs) const;
+         void blockInfo(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const MHDFloat l, const BcMap& bcs) const;
 
          /**
           * @brief Build implicit matrix block
@@ -121,6 +137,11 @@ namespace Implicit {
           */
          void applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
 
+         /**
+          * @brief Boundary condition stencil
+          */
+         virtual void stencil(SparseMatrix& mat, const SpectralFieldId& fId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
+
       private:
          /**
           * @brief Add block matrix to full system matrix
@@ -128,9 +149,21 @@ namespace Implicit {
          void addBlock(SparseMatrix& mat, const SparseMatrix& block, const int rowShift, const int colShift, const MHDFloat coeff = 1.0) const;
 
          /**
-          * @brief Compute size information of full system
+          * @brief Get operator block size
           */
-         std::tuple<int,int,int, int> systemSize(const SpectralFieldId& colId, const SpectralFieldId& rowId, const int m, const Resolution& res) const;
+         int blockSize(const SpectralFieldId& fId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin) const;
+
+         /**
+          * @brief Get operator block shape
+          */
+         std::pair<int,int> blockShape(const SpectralFieldId& rowId, const SpectralFieldId& colId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin, const bool dropRows) const;
+
+         /**
+          * @brief Compute size information of full system
+          *
+          * @param dropRows Number of rows to drop
+          */
+         internal::SystemInfo systemInfo(const SpectralFieldId& colId, const SpectralFieldId& rowId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin, const bool dropRows) const;
    };
 
 } // Implicit

@@ -59,6 +59,11 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/D2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/R1D1DivR1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/InsulatingShell.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/Value.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/D1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/R1D1DivR1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD2.hpp"
 #include "QuICC/Math/Constants.hpp"
 
 #include <iostream>
@@ -132,9 +137,9 @@ namespace Implicit {
       indexMode = static_cast<int>(Equations::CouplingIndexType::SLOWEST_SINGLE_RHS);
    }
 
-   void ModelBackend::blockSize(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs) const
+   void ModelBackend::blockInfo(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const MHDFloat l, const BcMap& bcs) const
    {
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
       tN = nN;
 
       int shiftR;
@@ -148,7 +153,6 @@ namespace Implicit {
          else if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
          {
             shiftR = 4;
-            //shiftR = 2;
          }
          else
          {
@@ -181,7 +185,7 @@ namespace Implicit {
          int tN, gN, rhs;
          ArrayI shift(3);
 
-         this->blockSize(tN, gN, shift, rhs, fId, res, eigs, bcs);
+         this->blockInfo(tN, gN, shift, rhs, fId, res, eigs.at(0), bcs);
 
          tauN(idx) = tN;
          galN(idx) = gN;
@@ -192,7 +196,7 @@ namespace Implicit {
          int sN = 0;
          for(auto f: this->implicitFields(fId))
          {
-            this->blockSize(tN, gN, shift, rhs, f, res, eigs, bcs);
+            this->blockInfo(tN, gN, shift, rhs, f, res, eigs.at(0), bcs);
             sN += gN;
          }
 
@@ -214,10 +218,10 @@ namespace Implicit {
       int m = eigs.at(0);
 
       // Compute system size
-      const auto sysInfo = systemSize(rowId, colId, m, res);
-      const auto sysN = std::get<0>(sysInfo)*std::get<1>(sysInfo);
-      const auto baseRowShift = std::get<0>(sysInfo)*std::get<2>(sysInfo);
-      const auto baseColShift = std::get<0>(sysInfo)*std::get<3>(sysInfo);
+      const auto sysInfo = systemInfo(rowId, colId, m, res, bcs, this->useGalerkin(), false);
+      const auto& sysN = sysInfo.systemSize;
+      const auto& baseRowShift = sysInfo.startRow;
+      const auto& baseColShift = sysInfo.startCol;
       auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
 
       auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
@@ -233,6 +237,8 @@ namespace Implicit {
       assert(decMat.imag().rows() == sysN);
       assert(decMat.imag().cols() == sysN);
 
+      int tN, gN, rhs;
+      ArrayI shift(3);
 
       int rowShift = baseRowShift;
       int colShift = baseColShift;
@@ -242,6 +248,7 @@ namespace Implicit {
          {
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
             const auto T = 1.0/Ek;
+
             for(int l = m; l < nL; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
@@ -250,12 +257,26 @@ namespace Implicit {
                   const auto dl = static_cast<MHDFloat>(l);
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I2Y2SphLapl i2r2lapl(nN, nN, ri, ro, l);
-                  this->addBlock(decMat.real(), i2r2lapl.mat(), rowShift, colShift);
+                  SparseMatrix bMat = i2r2lapl.mat(); 
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
+
                   SparseSM::Chebyshev::LinearMap::I2Y2 i2r2(nN, nN, ri, ro);
-                  this->addBlock(decMat.imag(), i2r2.mat(), rowShift, colShift, m*T*invlapl);
+                  bMat = m*T*invlapl*i2r2.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.imag(), bMat, rowShift, colShift);
                }
-               rowShift += nN;
-               colShift += nN;
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
          }
          else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
@@ -266,8 +287,10 @@ namespace Implicit {
 
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
             const auto T = 1.0/Ek;
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
-            rowShift = baseRowShift + nN;
+
+            this->blockInfo(tN, gN, shift, rhs, rowId, res, m, bcs);
+
+            rowShift = baseRowShift + gN;
             colShift = baseColShift;
             for(int l = m+1; l < nL; l++)
             {
@@ -278,18 +301,29 @@ namespace Implicit {
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
                   auto norm = (dl - 1.0)*coriolis(l, m);
-                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, -norm*T*invlapl);
+                  SparseMatrix bMat = -norm*T*invlapl*cor_r.mat();
 
                   SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l, m);
-                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, -norm*T*invlapl);
+                  bMat += -norm*T*invlapl*cordr.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
+
                }
-               rowShift += nN;
-               colShift += nN;
+
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
-            nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
+
+            this->blockInfo(tN, gN, shift, rhs, colId, res, m, bcs);
             rowShift = baseRowShift;
-            colShift = baseColShift + nN;
+            colShift = baseColShift + gN;
             for(int l = m; l < nL - 1; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
@@ -299,14 +333,24 @@ namespace Implicit {
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
                   auto norm = -(dl + 2.0)*coriolis(l+1, m);
-                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, -norm*T*invlapl);
+                  SparseMatrix bMat = -norm*T*invlapl*cor_r.mat();
 
                   SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l+1, m);
-                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, -norm*T*invlapl);
+                  bMat += -norm*T*invlapl*cordr.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
+
                }
-               rowShift += nN;
-               colShift += nN;
+
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
          }
       }
@@ -316,6 +360,7 @@ namespace Implicit {
          {
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
             const auto T = 1.0/Ek;
+
             for(int l = m; l < nL; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
@@ -323,14 +368,27 @@ namespace Implicit {
                {
                   const auto dl = static_cast<MHDFloat>(l);
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
-                  SparseSM::Chebyshev::LinearMap::I4Y4SphLapl2 i4r4lapl2(nN, nN, ri, ro, l);
-                  //SparseSM::Chebyshev::LinearMap::I2Y2SphLapl i2r2lapl(nN, nN, ri, ro, l);
-                  this->addBlock(decMat.real(), i4r4lapl2.mat(), rowShift, colShift);
-                  SparseSM::Chebyshev::LinearMap::I4Y4SphLapl i4r4lapl(nN, nN, ri, ro, l);
-                  this->addBlock(decMat.imag(), i4r4lapl.mat(), rowShift, colShift, m*T*invlapl);
+                  SparseSM::Chebyshev::LinearMap::I4Y4SphLapl2 diffusion(nN, nN, ri, ro, l);
+                  SparseMatrix bMat = diffusion.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+
+                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
+                  SparseSM::Chebyshev::LinearMap::I4Y4SphLapl coriolis(nN, nN, ri, ro, l);
+                  bMat = m*T*invlapl*coriolis.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.imag(), bMat, rowShift, colShift);
                }
-               rowShift += nN;
-               colShift += nN;
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
          }
          else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR))
@@ -341,8 +399,9 @@ namespace Implicit {
 
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
             const auto T = 1.0/Ek;
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
-            rowShift = baseRowShift + nN;
+
+            this->blockInfo(tN, gN, shift, rhs, rowId, res, m, bcs);
+            rowShift = baseRowShift + gN;
             colShift = baseColShift;
             for(int l = m+1; l < nL; l++)
             {
@@ -353,17 +412,26 @@ namespace Implicit {
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
                   auto norm = (dl - 1.0)*coriolis(l, m);
-                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, norm*T*invlapl);
+                  SparseMatrix bMat = norm*T*invlapl*cor_r.mat();
                   SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l, m);
-                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, norm*T*invlapl);
+                  bMat += norm*T*invlapl*cordr.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
                }
-               rowShift += nN;
-               colShift += nN;
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
-            nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
+
+            this->blockInfo(tN, gN, shift, rhs, colId, res, m, bcs);
             rowShift = baseRowShift;
-            colShift = baseColShift + nN;
+            colShift = baseColShift + gN;
             for(int l = m; l < nL - 1; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
@@ -373,13 +441,21 @@ namespace Implicit {
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
                   auto norm = -(dl + 2.0)*coriolis(l+1, m);
-                  this->addBlock(decMat.real(), cor_r.mat(), rowShift, colShift, norm*T*invlapl);
+                  SparseMatrix bMat = norm*T*invlapl*cor_r.mat();
                   SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l+1, m);
-                  this->addBlock(decMat.real(), cordr.mat(), rowShift, colShift, norm*T*invlapl);
+                  bMat += norm*T*invlapl*cordr.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
                }
-               rowShift += nN;
-               colShift += nN;
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
          }
          else if(colId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
@@ -391,10 +467,18 @@ namespace Implicit {
                if(l > 0)
                {
                   SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nN, nN, ri, ro);
-                  this->addBlock(decMat.real(), i4r4.mat(), rowShift, colShift, -Ra);
+                  SparseMatrix bMat = -Ra*i4r4.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  }
+                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
                }
-               rowShift += nN;
-               colShift += nN;
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
          }
       }
@@ -408,24 +492,34 @@ namespace Implicit {
             for(int l = m; l < nL; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+               SparseMatrix bMat;
                if(heatingMode == 0)
                {
                   SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nN, nN, ri, ro, l);
-                  this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, (1.0/Pr));
+                  bMat = (1.0/Pr)*spasm.mat();
                }
                else
                {
                   SparseSM::Chebyshev::LinearMap::I2Y3SphLapl spasm(nN, nN, ri, ro, l);
-                  this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, (1.0/Pr));
+                  bMat = (1.0/Pr)*spasm.mat();
                }
-               rowShift += nN;
-               colShift += nN;
+               if(this->useGalerkin())
+               {
+                  this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+               }
+               this->addBlock(decMat.real(), bMat, rowShift, colShift);
+
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+               colShift += gN;
             }
          }
       }
       else
       {
-         throw std::logic_error("Equations are not setup properly");
+         //throw std::logic_error("Equations are not setup properly");
       }
    }
 
@@ -438,9 +532,9 @@ namespace Implicit {
       int m = eigs.at(0);
 
       // Compute system size
-      const auto sysInfo = systemSize(fieldId, fieldId, m, res);
-      const auto sysN = std::get<0>(sysInfo)*std::get<1>(sysInfo);
-      const auto baseShift = std::get<0>(sysInfo)*std::get<2>(sysInfo);
+      const auto sysInfo = systemInfo(fieldId, fieldId, m, res, bcs, this->useGalerkin(), false);
+      const auto& sysN = sysInfo.systemSize;
+      const auto& baseShift = sysInfo.startRow;
       auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
 
       auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
@@ -455,81 +549,109 @@ namespace Implicit {
       assert(decMat.real().rows() == sysN);
       assert(decMat.imag().rows() == sysN);
 
+      int tN, gN, rhs;
+      ArrayI shift(3);
+
       if(fieldId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR))
       {
-         int shift = baseShift;
+         int rowShift = baseShift;
          for(int l = m; l < nL; l++)
          {
             auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+            this->blockInfo(tN, gN, shift, rhs, fieldId, res, l, bcs);
+            SparseMatrix bMat;
             if(l > 0)
             {
                SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-               this->addBlock(decMat.real(), spasm.mat(), shift, shift);
+               bMat = spasm.mat();
+               if(this->useGalerkin())
+               {
+                  this->applyGalerkinStencil(bMat, fieldId, fieldId, matIdx, res, eigs, bcs, nds);
+               }
+               //this->addBlock(decMat.real(), spasm.mat(), rowShift, rowShift);
             }
             else
             {
-               SparseSM::Chebyshev::LinearMap::Id qid(nN, nN, ri, ro);
-               this->addBlock(decMat.real(), qid.mat(), shift, shift);
+               SparseSM::Chebyshev::LinearMap::Id qid(gN, gN, ri, ro);
+               bMat = qid.mat();
+               //this->addBlock(decMat.real(), qid.mat(), rowShift, rowShift);
             }
-            shift += nN;
+            this->addBlock(decMat.real(), bMat, rowShift, rowShift);
+            rowShift += gN;
          }
       }
       else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
       {
-         int shift = baseShift;
+         int rowShift = baseShift;
          for(int l = m; l < nL; l++)
          {
             auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+            this->blockInfo(tN, gN, shift, rhs, fieldId, res, l, bcs);
+            SparseMatrix bMat;
             if(l > 0)
             {
                SparseSM::Chebyshev::LinearMap::I4Y4SphLapl spasm(nN, nN, ri, ro, l);
-               //SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-               this->addBlock(decMat.real(), spasm.mat(), shift, shift);
+               bMat = spasm.mat();
+               if(this->useGalerkin())
+               {
+                  this->applyGalerkinStencil(bMat, fieldId, fieldId, matIdx, res, eigs, bcs, nds);
+               }
+               //this->addBlock(decMat.real(), spasm.mat(), rowShift, rowShift);
             }
             else
             {
-               SparseSM::Chebyshev::LinearMap::Id qid(nN, nN, ri, ro);
-               this->addBlock(decMat.real(), qid.mat(), shift, shift);
+               SparseSM::Chebyshev::LinearMap::Id qid(gN, gN, ri, ro);
+               bMat = qid.mat();
+               //this->addBlock(decMat.real(), qid.mat(), rowShift, rowShift);
             }
-            shift += nN;
+            this->addBlock(decMat.real(), bMat, rowShift, rowShift);
+            rowShift += gN;
          }
       }
       else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
       {
          auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
 
-         int shift = baseShift;
+         int rowShift = baseShift;
          for(int l = m; l < nL; l++)
          {
             auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+            SparseMatrix bMat;
             if(heatingMode == 0)
             {
                SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-               this->addBlock(decMat.real(), spasm.mat(), shift, shift);
+               bMat = spasm.mat();
+               //this->addBlock(decMat.real(), spasm.mat(), rowShift, rowShift);
             }
             else
             {
                SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nN, nN, ri, ro);
-               this->addBlock(decMat.real(), spasm.mat(), shift, shift);
+               bMat = spasm.mat();
+               //this->addBlock(decMat.real(), spasm.mat(), rowShift, rowShift);
             }
-            shift += nN;
+            if(this->useGalerkin())
+            {
+               this->applyGalerkinStencil(bMat, fieldId, fieldId, matIdx, res, eigs, bcs, nds);
+            }
+            this->addBlock(decMat.real(), bMat, rowShift, rowShift);
+            this->blockInfo(tN, gN, shift, rhs, fieldId, res, l, bcs);
+            rowShift += gN;
          }
       }
    }
 
    void ModelBackend::boundaryBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      bool needStencil = this->useGalerkin();
       bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
 
       assert(eigs.size() == 1);
       int m = eigs.at(0);
 
       // Compute system size
-      const auto sysInfo = systemSize(rowId, colId, m, res);
-      const auto sysN = std::get<0>(sysInfo)*std::get<1>(sysInfo);
-      const auto baseRowShift = std::get<0>(sysInfo)*std::get<2>(sysInfo);
-      const auto baseColShift = std::get<0>(sysInfo)*std::get<3>(sysInfo);
+      const auto sysInfo = systemInfo(rowId, colId, m, res, bcs, this->useGalerkin(), false);
+      const auto sysN = sysInfo.systemSize;
+      const auto baseRowShift = sysInfo.startRow;
+      const auto baseColShift = sysInfo.startCol;
       auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
 
       if(decMat.real().size() == 0)
@@ -542,10 +664,13 @@ namespace Implicit {
       assert(decMat.imag().rows() == sysN);
       assert(decMat.imag().cols() == sysN);
 
+      int tN, gN, rhs;
+      ArrayI shift(3);
+
       int rowShift = baseRowShift;
       int colShift = baseColShift;
       // Apply boundary condition
-      if(needStencil)
+      if(this->useGalerkin())
       {
          for(int l = m; l < nL; l++)
          {
@@ -553,8 +678,12 @@ namespace Implicit {
             SparseMatrix mat(nN, nN);
             this->applyGalerkinStencil(mat, rowId, colId, matIdx, res, eigs, bcs, nds);
             this->addBlock(decMat.real(), mat, rowShift, colShift);
-            rowShift += nN;
-            colShift += nN;
+
+            this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
+            rowShift += gN;
+
+            this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
+            colShift += gN;
          }
       }
       else if(needTau)
@@ -573,6 +702,7 @@ namespace Implicit {
             SparseMatrix mat(nN, nN);
             this->applyTau(mat, rowId, colId, matIdx, res, eigs, bcs, nds);
             this->addBlock(decMat.real(), mat, rowShift, colShift);
+
             rowShift += nN;
             colShift += nN;
          }
@@ -588,12 +718,16 @@ namespace Implicit {
       auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
       auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
 
-      auto stencil = mat;
-      this->galerkinStencil(stencil, colId, matIdx, res, eigs, false, bcs, nds);
+      auto S = mat;
+      this->stencil(S, colId, matIdx, res, eigs, false, bcs, nds);
 
-      auto s = stencil.rows() - stencil.cols();
+      int tN, gN, rhs;
+      ArrayI shift(3);
+      this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+
+      auto s = shift(0);
       SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro, 0, s);
-      mat = qId.mat()*(mat*stencil);
+      mat = qId.mat()*(mat*S);
    }
 
    void ModelBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
@@ -711,78 +845,36 @@ namespace Implicit {
 
    void ModelBackend::galerkinStencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      throw std::logic_error("Not yet implemented!");
-      
-#if 0
+      assert(this->useGalerkin());
       assert(eigs.size() == 1);
-      int l = eigs.at(0);
+      int m = eigs.at(0);
 
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+      // Compute system size
+      const auto sysRows = systemInfo(fieldId, fieldId, m, res, bcs, makeSquare, false).blockRows;
+      const auto sysCols = systemInfo(fieldId, fieldId, m, res, bcs, true, false).blockCols;
 
-      auto bcId = bcs.find(fieldId.first)->second;
+      auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
 
-      int s = 0;
-      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR))
+      if(mat.size() == 0)
       {
-         s = 1;
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-1, a, b, l);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-1, a, b, l);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerkin boundary conditions for Velocity Toroidal component not implemented");
-         }
+         mat.resize(sysRows,sysCols);
       }
-      else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
-      {
-         s = 2;
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-2, a, b, l);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-2, a, b, l);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerin boundary conditions for Velocity Poloidal component not implemented");
-         }
-      }
-      else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
-      {
-         s = 1;
-         if(bcId == Bc::Name::FixedTemperature::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-1, a, b, l);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::FixedFlux::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-1, a, b, l);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerkin boundary conditions for Temperature not implemented");
-         }
-      }
+      assert(mat.rows() == sysRows);
+      assert(mat.cols() == sysCols);
 
-      if(makeSquare)
+      assert(eigs.size() == 1);
+
+      int rowShift = 0;
+      int colShift = 0;
+      for(int l = m; l < nL; l++)
       {
-         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, a, b, l);
-         mat = qId.mat()*mat;
+         SparseMatrix S;
+         this->stencil(S, fieldId, matIdx, res, eigs, makeSquare, bcs, nds);
+         this->addBlock(mat, S, rowShift, colShift);
+
+         rowShift += S.rows();
+         colShift += S.cols();
       }
-#endif
    }
 
    void ModelBackend::explicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const std::size_t opId,  const SpectralFieldId colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
@@ -790,9 +882,14 @@ namespace Implicit {
       assert(eigs.size() == 1);
       int m = eigs.at(0);
 
+      int tN, gN, rhs;
+      ArrayI shift(3);
+      this->blockInfo(tN, gN, shift, rhs, colId, res, m, bcs);
+
       // Compute system size
-      const auto sysInfo = systemSize(rowId, colId, m, res);
-      const auto sysN = std::get<0>(sysInfo);
+      const auto sysInfo = systemInfo(rowId, colId, m, res, bcs, false, this->useGalerkin());
+      const auto sysRows = sysInfo.blockRows;
+      const auto sysCols = sysInfo.blockCols;
       const auto baseShift = 0;
       auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
 
@@ -801,13 +898,13 @@ namespace Implicit {
 
       if(decMat.real().size() == 0)
       {
-         decMat.real().resize(sysN,sysN);
-         decMat.imag().resize(sysN,sysN);
+         decMat.real().resize(sysRows,sysCols);
+         decMat.imag().resize(sysRows,sysCols);
       }
-      assert(decMat.real().rows() == sysN);
-      assert(decMat.real().cols() == sysN);
-      assert(decMat.imag().rows() == sysN);
-      assert(decMat.imag().cols() == sysN);
+      assert(decMat.real().rows() == sysRows);
+      assert(decMat.real().cols() == sysCols);
+      assert(decMat.imag().rows() == sysRows);
+      assert(decMat.imag().cols() == sysCols);
 
       // Explicit linear operator
       if(opId == ModelOperator::ExplicitLinear::id())
@@ -817,13 +914,27 @@ namespace Implicit {
          {
             auto Ra = effectiveRa(nds);
 
-            int shift = baseShift;
+            int rowShift = baseShift;
+            int colShift = baseShift;
             for(int l = m; l < nL; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
                SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nN, nN, ri, ro);
-               this->addBlock(decMat.real(), spasm.mat(), shift, shift, Ra);
-               shift += nN;
+               SparseMatrix bMat = Ra*spasm.mat();
+               if(this->useGalerkin())
+               {
+                  this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+                  SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
+                  bMat = qId.mat()*bMat;
+               }
+               this->addBlock(decMat.real(), bMat, rowShift, colShift);
+               //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, Ra);
+
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, eigs.at(0), bcs);
+               colShift += tN;
             }
          }
          else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && 
@@ -832,23 +943,45 @@ namespace Implicit {
             auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
             auto bg = effectiveBg(nds);
 
-            int shift = baseShift;
+            int rowShift = baseShift;
+            int colShift = baseShift;
             for(int l = m; l < nL; l++)
             {
                auto dl = static_cast<MHDFloat>(l);
                auto ll1 = dl*(dl + 1.0);
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+               SparseMatrix bMat;
                if(heatingMode == 0)
                {
                   SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-                  this->addBlock(decMat.real(), spasm.mat(), shift, shift, -bg*ll1);
+                  bMat = -bg*ll1*spasm.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
+                     bMat = qId.mat()*bMat;
+                  }
+                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, -bg*ll1);
                }
                else
                {
                   SparseSM::Chebyshev::LinearMap::I2 spasm(nN, nN, ri, ro);
-                  this->addBlock(decMat.real(), spasm.mat(), shift, shift, -bg*ll1);
+                  bMat = -bg*ll1*spasm.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
+                     bMat = qId.mat()*bMat;
+                  }
+                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, -bg*ll1);
                }
-               shift += nN;
+               this->addBlock(decMat.real(), bMat, rowShift, colShift);
+
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, eigs.at(0), bcs);
+               colShift += tN;
             }
          }
          else
@@ -864,21 +997,43 @@ namespace Implicit {
          {
             auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
 
-            int shift = baseShift;
+            int rowShift = baseShift;
+            int colShift = baseShift;
             for(int l = m; l < nL; l++)
             {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+               SparseMatrix bMat;
                if(heatingMode == 0)
                {
                   SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-                  this->addBlock(decMat.real(), spasm.mat(), shift, shift);
+                  bMat = spasm.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
+                     bMat = qId.mat()*bMat;
+                  }
+                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift);
                }
                else
                {
                   SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nN, nN, ri, ro);
-                  this->addBlock(decMat.real(), spasm.mat(), shift, shift);
+                  bMat = spasm.mat();
+                  if(this->useGalerkin())
+                  {
+                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
+                     bMat = qId.mat()*bMat;
+                  }
+                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift);
                }
-               shift += nN;
+               this->addBlock(decMat.real(), bMat, rowShift, colShift);
+
+               this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
+               rowShift += gN;
+
+               this->blockInfo(tN, gN, shift, rhs, colId, res, eigs.at(0), bcs);
+               colShift += tN;
             }
          }
          else
@@ -909,39 +1064,153 @@ namespace Implicit {
       mat += full;
    }
 
-   std::tuple<int, int, int, int> ModelBackend::systemSize(const SpectralFieldId& rowId, const SpectralFieldId& colId, const int m, const Resolution& res) const
+   int ModelBackend::blockSize(const SpectralFieldId& fId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin) const
    {
-      auto sysN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
       auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
 
-      for(int l = m+1; l < nL; l++)
+      // Compute size
+      auto s = 0;
+      for(int l = m; l < nL; l++)
       {
-         auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-         sysN += nN;
+         int tN, gN, rhs;
+         ArrayI shift(3);
+         this->blockInfo(tN, gN, shift, rhs, fId, res, l, bcs);
+         if(isGalerkin)
+         {
+            s += gN;
+         }
+         else
+         {
+            s += tN;
+         }
       }
 
+      return s;
+   }
+
+   void ModelBackend::stencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   {
+      assert(eigs.size() == 1);
+
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+
+      auto bcId = bcs.find(fieldId.first)->second;
+
+      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
+      int s = 0;
+      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR))
+      {
+         s = 2;
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerkin boundary conditions for Velocity Toroidal component not implemented");
+         }
+      }
+      else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
+      {
+         s = 4;
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerin boundary conditions for Velocity Poloidal component not implemented");
+         }
+      }
+      else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
+      {
+         s = 2;
+         if(bcId == Bc::Name::FixedTemperature::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::FixedFlux::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerkin boundary conditions for Temperature not implemented");
+         }
+      }
+
+      if(makeSquare)
+      {
+         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro);
+         mat = qId.mat()*mat;
+      }
+   }
+
+   std::pair<int, int> ModelBackend::blockShape(const SpectralFieldId& rowId, const SpectralFieldId& colId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin, const bool dropRows) const
+   {
+      // Compute number of rows
+      auto rows = this->blockSize(rowId, m, res, bcs, isGalerkin || dropRows);
+
+      // Compute number of cols
+      int cols = this->blockSize(colId, m, res, bcs, isGalerkin);
+
+      return std::make_pair(rows, cols);
+   }
+
+   internal::SystemInfo ModelBackend::systemInfo(const SpectralFieldId& rowId, const SpectralFieldId& colId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin, const bool dropRows) const
+   {
+      auto shape = this->blockShape(rowId, colId, m, res, bcs, isGalerkin, dropRows);
+
+      int sysN = 0;
+      bool rowCount = true;
+      bool colCount = true;
       int rowIdx = 0;
       int colIdx = 0;
-      int idx = 0;
       const auto& fields = this->implicitFields(rowId);
       for(auto it = fields.begin(); it != fields.end(); ++it)
       {
+         int s = this->blockSize(*it, m, res, bcs, isGalerkin);
+         sysN += s;
+
          // Get block index of rowId
-         if(rowId == *it)
+         if(rowCount && rowId != *it)
          {
-            rowIdx = idx;
+            rowIdx += s;
+         }
+         else if(rowId == *it)
+         {
+            rowCount = false;
          }
 
          // Get block index of colId
-         if(colId == *it)
+         if(colCount && colId != *it)
          {
-            colIdx = idx;
+            colIdx += s;
          }
-         idx++;
+         else if(colId == *it)
+         {
+            colCount = false;
+         }
       }
-      int nFields = fields.size();
 
-      return std::make_tuple(sysN, nFields, rowIdx, colIdx);
+      internal::SystemInfo info(sysN, shape.first, shape.second, rowIdx, colIdx);
+      return info;
    }
 
 

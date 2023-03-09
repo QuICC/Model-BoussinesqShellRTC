@@ -295,12 +295,12 @@ namespace Explicit {
       auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
       auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
 
-      auto stencil = decMat.real();
-      this->galerkinStencil(stencil, colId, matIdx, res, eigs, false, bcs, nds);
+      auto S = decMat.real();
+      this->galerkinStencil(S, colId, matIdx, res, eigs, false, bcs, nds);
 
-      auto s = stencil.rows() - stencil.cols();
+      auto s = S.rows() - S.cols();
       SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro, 0, s);
-      decMat.real() = qId.mat()*(decMat.real()*stencil);
+      decMat.real() = qId.mat()*(decMat.real()*S);
    }
 
    void ModelBackend::applyTau(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const

@@ -72,7 +72,7 @@ namespace Shell {
 namespace RTC {
 
    IRTCBackend::IRTCBackend()
-      : IModelBackend(), mUseGalerkin(false)
+      : IModelBackend(), mUseGalerkin(false), mUseSplitEquation(false)
    {
    }
 
@@ -114,6 +114,16 @@ namespace RTC {
    bool IRTCBackend::useGalerkin() const
    {
       return this->mUseGalerkin;
+   }
+
+   bool IRTCBackend::useSplitEquation() const
+   {
+      return this->mUseSplitEquation;
+   }
+
+   void IRTCBackend::enableSplitEquation(const bool tag)
+   {
+      this->mUseSplitEquation = tag;
    }
 
    std::map<std::string,MHDFloat> IRTCBackend::automaticParameters(const std::map<std::string,MHDFloat>& cfg) const
@@ -252,7 +262,7 @@ namespace RTC {
       }
    }
 
-   void IRTCBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   void IRTCBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitOperator) const
    {
       assert(eigs.size() == 1);
 
@@ -286,23 +296,51 @@ namespace RTC {
       }
       else if(rowId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL) && rowId == colId)
       {
-         if(bcId == Bc::Name::NoSlip::id())
+         if(this->useSplitEquation())
          {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::BOTTOM);
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::TOP);
-            bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::BOTTOM);
+            if(isSplitOperator)
+            {
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
+            }
+            else
+            {
+               if(bcId == Bc::Name::NoSlip::id())
+               {
+                  bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::TOP);
+                  bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::BOTTOM);
+               }
+               else if(bcId == Bc::Name::StressFree::id())
+               {
+                  bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::TOP);
+                  bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::BOTTOM);
+               }
+               else
+               {
+                  throw std::logic_error("Boundary conditions for Velocity Poloidal component not implemented");
+               }
+            }
          }
          else
          {
-            throw std::logic_error("Boundary conditions for Velocity Poloidal component not implemented");
+            if(bcId == Bc::Name::NoSlip::id())
+            {
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::TOP);
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D1>(Position::BOTTOM);
+            }
+            else if(bcId == Bc::Name::StressFree::id())
+            {
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::TOP);
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::Value>(Position::BOTTOM);
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::TOP);
+               bcOp.addRow<SparseSM::Chebyshev::LinearMap::Boundary::D2>(Position::BOTTOM);
+            }
+            else
+            {
+               throw std::logic_error("Boundary conditions for Velocity Poloidal component not implemented");
+            }
          }
       }
       else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && rowId == colId)

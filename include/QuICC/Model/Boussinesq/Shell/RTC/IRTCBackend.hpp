@@ -77,6 +77,16 @@ namespace RTC {
          bool useGalerkin() const;
 
          /**
+          * @brief Split high order equations?
+          */
+         bool useSplitEquation() const;
+
+         /**
+          * @brief Enable split equation
+          */
+         void enableSplitEquation(const bool flag);
+
+         /**
           * @brief Compute effective Rayleigh number
           */
          MHDFloat effectiveRa(const NonDimensional::NdMap& nds) const;
@@ -104,7 +114,7 @@ namespace RTC {
          /**
           * @brief Apply tau line for boundary condition
           */
-         void applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const;
+         void applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitOperator) const;
 
          /**
           * @brief Apply galerkin stencil for boundary condition
@@ -116,6 +126,11 @@ namespace RTC {
           * @brief Use Galerkin basis?
           */
          bool mUseGalerkin;
+
+         /**
+          * @brief Split high order equation?
+          */
+         bool mUseSplitEquation;
    };
 
 } // RTC

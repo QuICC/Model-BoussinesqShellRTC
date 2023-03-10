@@ -48,12 +48,12 @@ namespace Explicit {
          /**
           * @brief Get equation information
           */
-         virtual void equationInfo(bool& isComplex, SpectralFieldIds& im, SpectralFieldIds& exL, SpectralFieldIds& exNL, SpectralFieldIds& exNS, int& indexMode, const SpectralFieldId& fId, const Resolution& res) const override;
+         virtual void equationInfo(EquationInfo& info, const SpectralFieldId& fId, const Resolution& res) const override;
 
          /**
           * @brief Get operator information
           */
-         virtual void operatorInfo(ArrayI& tauN, ArrayI& galN, MatrixI& galShift, ArrayI& rhsCols, ArrayI& sysN, const SpectralFieldId& fId, const Resolution& res, const Equations::Tools::ICoupling& coupling, const BcMap& bcs) const override;
+         virtual void operatorInfo(OperatorInfo& info, const SpectralFieldId& fId, const Resolution& res, const Equations::Tools::ICoupling& coupling, const BcMap& bcs) const override;
 
          /**
           * @brief Build model matrix
@@ -94,7 +94,7 @@ namespace Explicit {
          /**
           * @brief Build implicit matrix block
           */
-         void implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const NonDimensional::NdMap& nds) const;
+         void implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const NonDimensional::NdMap& nds, const bool isSplitOperator) const;
 
          /**
           * @brief Build time matrix block

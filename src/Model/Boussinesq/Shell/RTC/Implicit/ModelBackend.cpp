@@ -17,6 +17,8 @@
 #include "QuICC/ModelOperator/ExplicitNextstep.hpp"
 #include "QuICC/ModelOperator/Stencil.hpp"
 #include "QuICC/ModelOperator/Boundary.hpp"
+#include "QuICC/ModelOperator/SplitImplicitLinear.hpp"
+#include "QuICC/ModelOperator/SplitBoundary.hpp"
 #include "QuICC/ModelOperatorBoundary/FieldToRhs.hpp"
 #include "QuICC/ModelOperatorBoundary/SolverHasBc.hpp"
 #include "QuICC/ModelOperatorBoundary/SolverNoTau.hpp"
@@ -116,31 +118,34 @@ namespace Implicit {
       return fields;
    }
 
-   void ModelBackend::equationInfo(bool& isComplex, SpectralFieldIds& im, SpectralFieldIds& exL, SpectralFieldIds& exNL, SpectralFieldIds& exNS, int& indexMode, const SpectralFieldId& fId, const Resolution& res) const
+   void ModelBackend::equationInfo(EquationInfo& info, const SpectralFieldId& fId, const Resolution& res) const
    {
       // Operators are complex
-      isComplex = true;
+      info.isComplex = true;
+
+      // Use split operators
+      info.isSplitEquation = this->useSplitEquation();
 
       // Implicit coupled fields
-      im = this->implicitFields(fId);
+      info.im = this->implicitFields(fId);
 
       // Explicit linear terms
-      exL = this->explicitLinearFields(fId);
+      info.exL = this->explicitLinearFields(fId);
 
       // Explicit nonlinear terms
-      exNL = this->explicitNonlinearFields(fId);
+      info.exNL = this->explicitNonlinearFields(fId);
 
       // Explicit nextstep terms
-      exNS.clear();
+      info.exNS.clear();
 
       // Index mode
-      indexMode = static_cast<int>(Equations::CouplingIndexType::SLOWEST_SINGLE_RHS);
+      info.indexMode = static_cast<int>(Equations::CouplingIndexType::SLOWEST_SINGLE_RHS);
    }
 
-   void ModelBackend::operatorInfo(ArrayI& tauN, ArrayI& galN, MatrixI& galShift, ArrayI& rhsCols, ArrayI& sysN, const SpectralFieldId& fId, const Resolution& res, const Equations::Tools::ICoupling& coupling, const BcMap& bcs) const
+   void ModelBackend::operatorInfo(OperatorInfo& info, const SpectralFieldId& fId, const Resolution& res, const Equations::Tools::ICoupling& coupling, const BcMap& bcs) const
    {
       // Loop overall matrices/eigs
-      for(int idx = 0; idx < tauN.size(); ++idx)
+      for(int idx = 0; idx < info.tauN.size(); ++idx)
       {
          auto eigs = coupling.getIndexes(res, idx);
 
@@ -149,10 +154,10 @@ namespace Implicit {
 
          this->blockInfo(tN, gN, shift, rhs, fId, res, eigs.at(0), bcs);
 
-         tauN(idx) = tN;
-         galN(idx) = gN;
-         galShift.row(idx) = shift;
-         rhsCols(idx) = rhs;
+         info.tauN(idx) = tN;
+         info.galN(idx) = gN;
+         info.galShift.row(idx) = shift;
+         info.rhsCols(idx) = rhs;
 
          // Compute system size
          int sN = 0;
@@ -164,14 +169,14 @@ namespace Implicit {
 
          if(sN == 0)
          {
-            sN = galN(idx);
+            sN = info.galN(idx);
          }
 
-         sysN(idx) = sN;
+         info.sysN(idx) = sN;
       }
    }
 
-   void ModelBackend::implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   void ModelBackend::implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitEquation) const
    {
       bool needStencil = (this->useGalerkin() && bcType == ModelOperatorBoundary::SolverNoTau::id());
       bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
@@ -596,7 +601,7 @@ namespace Implicit {
       }
    }
 
-   void ModelBackend::boundaryBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   void ModelBackend::boundaryBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplit) const
    {
       bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
 
@@ -656,7 +661,7 @@ namespace Implicit {
          {
             auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
             SparseMatrix mat(nN, nN);
-            this->applyTau(mat, rowId, colId, matIdx, res, eigs, bcs, nds);
+            this->applyTau(mat, rowId, colId, matIdx, res, eigs, bcs, nds, isSplit);
             this->addBlock(decMat.real(), mat, rowShift, colShift);
 
             rowShift += nN;
@@ -667,7 +672,6 @@ namespace Implicit {
 
    void ModelBackend::modelMatrix(DecoupledZSparse& rModelMatrix, const std::size_t opId, const Equations::CouplingInformation::FieldId_range imRange, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-
       // Time operator
       if(opId == ModelOperator::Time::id())
       {
@@ -677,24 +681,28 @@ namespace Implicit {
          }
       }
       // Linear operator
-      else if(opId == ModelOperator::ImplicitLinear::id())
+      else if(opId == ModelOperator::ImplicitLinear::id() || opId == ModelOperator::SplitImplicitLinear::id())
       {
+         bool isSplit = (opId == ModelOperator::SplitImplicitLinear::id());
+
          for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
          {
             for(auto pColId = imRange.first; pColId != imRange.second; pColId++)
             {
-               this->implicitBlock(rModelMatrix, *pRowId, *pColId, matIdx, bcType, res, eigs, bcs, nds);
+               this->implicitBlock(rModelMatrix, *pRowId, *pColId, matIdx, bcType, res, eigs, bcs, nds, isSplit);
             }
          }
       }
       // Boundary operator
-      else if(opId == ModelOperator::Boundary::id())
+      else if(opId == ModelOperator::Boundary::id() || opId == ModelOperator::SplitBoundary::id())
       {
+         bool isSplit = (opId == ModelOperator::SplitBoundary::id());
+
          for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
          {
             for(auto pColId = imRange.first; pColId != imRange.second; pColId++)
             {
-               this->boundaryBlock(rModelMatrix, *pRowId, *pColId, matIdx, bcType, res, eigs, bcs, nds);
+               this->boundaryBlock(rModelMatrix, *pRowId, *pColId, matIdx, bcType, res, eigs, bcs, nds, isSplit);
             }
          }
       }

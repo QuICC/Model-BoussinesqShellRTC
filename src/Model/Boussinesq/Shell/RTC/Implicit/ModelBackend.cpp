@@ -67,6 +67,7 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD2.hpp"
 #include "QuICC/Math/Constants.hpp"
+#include "QuICC/Precision.hpp"
 
 #include <iostream>
 namespace QuICC {
@@ -84,6 +85,7 @@ namespace Implicit {
    ModelBackend::ModelBackend()
       : IRTCBackend()
    {
+      this->enableSplitEquation(false);
    }
 
    ModelBackend::SpectralFieldIds ModelBackend::implicitFields(const SpectralFieldId& fId) const
@@ -124,7 +126,14 @@ namespace Implicit {
       info.isComplex = true;
 
       // Use split operators
-      info.isSplitEquation = this->useSplitEquation();
+      if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
+      {
+         info.isSplitEquation = this->useSplitEquation();
+      }
+      else
+      {
+         info.isSplitEquation = false;
+      }
 
       // Implicit coupled fields
       info.im = this->implicitFields(fId);
@@ -178,9 +187,6 @@ namespace Implicit {
 
    void ModelBackend::implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitEquation) const
    {
-      bool needStencil = (this->useGalerkin() && bcType == ModelOperatorBoundary::SolverNoTau::id());
-      bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
-
       assert(eigs.size() == 1);
       int m = eigs.at(0);
 
@@ -227,7 +233,7 @@ namespace Implicit {
                   SparseMatrix bMat = i2r2lapl.mat(); 
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.real(), bMat, rowShift, colShift);
 
@@ -235,7 +241,7 @@ namespace Implicit {
                   bMat = m*T*invlapl*i2r2.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.imag(), bMat, rowShift, colShift);
                }
@@ -249,7 +255,7 @@ namespace Implicit {
          else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
          {
             auto coriolis = [](const int l, const int m){
-               return (l - 1.0)*(l + 1.0)*precision::sqrt(((l - m)*(l + m))/((2.0*l - 1.0)*(2.0*l + 1.0)));
+               return (l - MHD_MP(1.0))*(l + MHD_MP(1.0))*precision::sqrt(((l - m)*(l + m))/((MHD_MP(2.0)*l - MHD_MP(1.0))*(MHD_MP(2.0)*l + MHD_MP(1.0))));
             };
 
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
@@ -264,18 +270,18 @@ namespace Implicit {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
                if(l > 0)
                {
-                  const auto dl = static_cast<MHDFloat>(l);
+                  const auto dl = static_cast<QuICC::internal::MHDFloat>(l);
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
-                  auto norm = (dl - 1.0)*coriolis(l, m);
-                  SparseMatrix bMat = -norm*T*invlapl*cor_r.mat();
+                  auto norm = (dl - MHD_MP(1.0))*coriolis(l, m);
+                  SparseMatrix bMat = -static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
 
                   SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l, m);
-                  bMat += -norm*T*invlapl*cordr.mat();
+                  bMat += -static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.real(), bMat, rowShift, colShift);
 
@@ -296,18 +302,18 @@ namespace Implicit {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
                if(l > 0)
                {
-                  const auto dl = static_cast<MHDFloat>(l);
-                  const auto invlapl = 1.0/(dl*(dl + 1.0));
+                  const auto dl = static_cast<QuICC::internal::MHDFloat>(l);
+                  const auto invlapl = MHD_MP(1.0)/(dl*(dl + MHD_MP(1.0)));
                   SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
-                  auto norm = -(dl + 2.0)*coriolis(l+1, m);
-                  SparseMatrix bMat = -norm*T*invlapl*cor_r.mat();
+                  auto norm = -(dl + MHD_MP(2.0))*coriolis(l+1, m);
+                  SparseMatrix bMat = -static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
 
                   SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l+1, m);
-                  bMat += -norm*T*invlapl*cordr.mat();
+                  bMat += -static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.real(), bMat, rowShift, colShift);
 
@@ -333,21 +339,21 @@ namespace Implicit {
                auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
                if(l > 0)
                {
-                  const auto dl = static_cast<MHDFloat>(l);
-                  const auto invlapl = 1.0/(dl*(dl + 1.0));
+                  const auto dl = static_cast<QuICC::internal::MHDFloat>(l);
+                  const auto invlapl = MHD_MP(1.0)/(dl*(dl + MHD_MP(1.0)));
                   SparseSM::Chebyshev::LinearMap::I4Y4SphLapl2 diffusion(nN, nN, ri, ro, l);
                   SparseMatrix bMat = diffusion.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
 
                   this->addBlock(decMat.real(), bMat, rowShift, colShift);
                   SparseSM::Chebyshev::LinearMap::I4Y4SphLapl coriolis(nN, nN, ri, ro, l);
-                  bMat = m*T*invlapl*coriolis.mat();
+                  bMat = static_cast<MHDFloat>(m*T*invlapl)*coriolis.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.imag(), bMat, rowShift, colShift);
                }
@@ -361,7 +367,7 @@ namespace Implicit {
          else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR))
          {
             auto coriolis = [](const int l, const int m){
-               return (l - 1.0)*(l + 1.0)*precision::sqrt(((l - m)*(l + m))/((2.0*l - 1.0)*(2.0*l + 1.0)));
+               return (l - MHD_MP(1.0))*(l + MHD_MP(1.0))*precision::sqrt(((l - m)*(l + m))/((MHD_MP(2.0)*l - MHD_MP(1.0))*(MHD_MP(2.0)*l + MHD_MP(1.0))));
             };
 
             const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
@@ -379,13 +385,13 @@ namespace Implicit {
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
                   auto norm = (dl - 1.0)*coriolis(l, m);
-                  SparseMatrix bMat = norm*T*invlapl*cor_r.mat();
+                  SparseMatrix bMat = static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
                   SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l, m);
-                  bMat += norm*T*invlapl*cordr.mat();
+                  bMat += static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.real(), bMat, rowShift, colShift);
                }
@@ -408,13 +414,13 @@ namespace Implicit {
                   const auto invlapl = 1.0/(dl*(dl + 1.0));
                   SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
                   auto norm = -(dl + 2.0)*coriolis(l+1, m);
-                  SparseMatrix bMat = norm*T*invlapl*cor_r.mat();
+                  SparseMatrix bMat = static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
                   SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
                   norm = -coriolis(l+1, m);
-                  bMat += norm*T*invlapl*cordr.mat();
+                  bMat += static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.real(), bMat, rowShift, colShift);
                }
@@ -437,7 +443,7 @@ namespace Implicit {
                   SparseMatrix bMat = -Ra*i4r4.mat();
                   if(this->useGalerkin())
                   {
-                     this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                   }
                   this->addBlock(decMat.real(), bMat, rowShift, colShift);
                }
@@ -472,7 +478,7 @@ namespace Implicit {
                }
                if(this->useGalerkin())
                {
-                  this->applyGalerkinStencil(bMat, rowId, colId, matIdx, res, eigs, bcs, nds);
+                  this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
                }
                this->addBlock(decMat.real(), bMat, rowShift, colShift);
 
@@ -492,9 +498,6 @@ namespace Implicit {
 
    void ModelBackend::timeBlock(DecoupledZSparse& decMat, const SpectralFieldId& fieldId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      bool needStencil = (this->useGalerkin() && bcType == ModelOperatorBoundary::SolverNoTau::id());
-      bool needTau = bcType == ModelOperatorBoundary::SolverHasBc::id();
-
       assert(eigs.size() == 1);
       int m = eigs.at(0);
 
@@ -533,7 +536,7 @@ namespace Implicit {
                bMat = spasm.mat();
                if(this->useGalerkin())
                {
-                  this->applyGalerkinStencil(bMat, fieldId, fieldId, matIdx, res, eigs, bcs, nds);
+                  this->applyGalerkinStencil(bMat, fieldId, fieldId, l, res, bcs, nds);
                }
             }
             else
@@ -559,7 +562,7 @@ namespace Implicit {
                bMat = spasm.mat();
                if(this->useGalerkin())
                {
-                  this->applyGalerkinStencil(bMat, fieldId, fieldId, matIdx, res, eigs, bcs, nds);
+                  this->applyGalerkinStencil(bMat, fieldId, fieldId, l, res, bcs, nds);
                }
             }
             else
@@ -592,7 +595,7 @@ namespace Implicit {
             }
             if(this->useGalerkin())
             {
-               this->applyGalerkinStencil(bMat, fieldId, fieldId, matIdx, res, eigs, bcs, nds);
+               this->applyGalerkinStencil(bMat, fieldId, fieldId, l, res, bcs, nds);
             }
             this->addBlock(decMat.real(), bMat, rowShift, rowShift);
             this->blockInfo(tN, gN, shift, rhs, fieldId, res, l, bcs);
@@ -637,7 +640,7 @@ namespace Implicit {
          {
             auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
             SparseMatrix mat(nN, nN);
-            this->applyGalerkinStencil(mat, rowId, colId, matIdx, res, eigs, bcs, nds);
+            this->applyGalerkinStencil(mat, rowId, colId, l, res, bcs, nds);
             this->addBlock(decMat.real(), mat, rowShift, colShift);
 
             this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
@@ -661,7 +664,7 @@ namespace Implicit {
          {
             auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
             SparseMatrix mat(nN, nN);
-            this->applyTau(mat, rowId, colId, matIdx, res, eigs, bcs, nds, isSplit);
+            this->applyTau(mat, rowId, colId, l, res, bcs, nds, isSplit);
             this->addBlock(decMat.real(), mat, rowShift, colShift);
 
             rowShift += nN;
@@ -738,7 +741,7 @@ namespace Implicit {
       for(int l = m; l < nL; l++)
       {
          SparseMatrix S;
-         this->stencil(S, fieldId, matIdx, res, eigs, makeSquare, bcs, nds);
+         this->stencil(S, fieldId, l, res, makeSquare, bcs, nds);
          this->addBlock(mat, S, rowShift, colShift);
 
          rowShift += S.rows();

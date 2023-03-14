@@ -191,82 +191,9 @@ namespace RTC {
       return effBg;
    }
 
-   void IRTCBackend::stencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   void IRTCBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int l, const Resolution& res, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitOperator) const
    {
-      assert(eigs.size() == 1);
-
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
-
-      auto bcId = bcs.find(fieldId.first)->second;
-
-      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      int s = this->nBc(fieldId);
-      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR))
-      {
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerkin boundary conditions for Velocity Toroidal component not implemented");
-         }
-      }
-      else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
-      {
-         if(bcId == Bc::Name::NoSlip::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::StressFree::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerin boundary conditions for Velocity Poloidal component not implemented");
-         }
-      }
-      else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
-      {
-         if(bcId == Bc::Name::FixedTemperature::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else if(bcId == Bc::Name::FixedFlux::id())
-         {
-            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-s, ri, ro);
-            mat = bc.mat();
-         }
-         else
-         {
-            throw std::logic_error("Galerkin boundary conditions for Temperature not implemented");
-         }
-      }
-
-      if(makeSquare)
-      {
-         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro);
-         mat = qId.mat()*mat;
-      }
-   }
-
-   void IRTCBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitOperator) const
-   {
-      assert(eigs.size() == 1);
-
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
 
       auto bcId = bcs.find(rowId.first)->second;
 
@@ -364,17 +291,84 @@ namespace RTC {
       mat += bcOp.mat();
    }
 
-   void IRTCBackend::applyGalerkinStencil(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   void IRTCBackend::stencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int l, const Resolution& res, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      assert(eigs.size() == 1);
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
 
-      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, eigs.at(0))(0);
+      auto bcId = bcs.find(fieldId.first)->second;
+
+      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
+      int s = this->nBc(fieldId);
+      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR))
+      {
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::R1D1DivR1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerkin boundary conditions for Velocity Toroidal component not implemented");
+         }
+      }
+      else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
+      {
+         if(bcId == Bc::Name::NoSlip::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::StressFree::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerin boundary conditions for Velocity Poloidal component not implemented");
+         }
+      }
+      else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
+      {
+         if(bcId == Bc::Name::FixedTemperature::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::Value bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else if(bcId == Bc::Name::FixedFlux::id())
+         {
+            SparseSM::Chebyshev::LinearMap::Stencil::D1 bc(nN, nN-s, ri, ro);
+            mat = bc.mat();
+         }
+         else
+         {
+            throw std::logic_error("Galerkin boundary conditions for Temperature not implemented");
+         }
+      }
+
+      if(makeSquare)
+      {
+         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro);
+         mat = qId.mat()*mat;
+      }
+   }
+
+   void IRTCBackend::applyGalerkinStencil(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int l, const Resolution& res, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   {
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
 
       auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
       auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
 
       auto S = mat;
-      this->stencil(S, colId, matIdx, res, eigs, false, bcs, nds);
+      this->stencil(S, colId, l, res, false, bcs, nds);
 
       auto s = this->nBc(rowId);
       SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro, 0, s);

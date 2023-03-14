@@ -140,7 +140,9 @@ namespace Explicit {
 
    void ModelBackend::blockSize(int& tN, int& gN, ArrayI& shift, int& rhs, const SpectralFieldId& fId, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs) const
    {
-      this->blockInfo(tN, gN, shift, rhs, fId, res, eigs.at(0), bcs);
+      assert(eigs.size() == 1);
+      int l = eigs.at(0);
+      this->blockInfo(tN, gN, shift, rhs, fId, res, l, bcs);
    }
 
    void ModelBackend::operatorInfo(OperatorInfo& info, const SpectralFieldId& fId, const Resolution& res, const Equations::Tools::ICoupling& coupling, const BcMap& bcs) const
@@ -282,6 +284,9 @@ namespace Explicit {
 
    void ModelBackend::modelMatrix(DecoupledZSparse& rModelMatrix, const std::size_t opId, const Equations::CouplingInformation::FieldId_range imRange, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
+      assert(eigs.size() == 1);
+      int l = eigs.at(0);
+
       // Time operator
       if(opId == ModelOperator::Time::id())
       {
@@ -295,11 +300,11 @@ namespace Explicit {
             // Apply boundary condition
             if(needStencil)
             {
-               this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pRowId, matIdx, res, eigs, bcs, nds);
+               this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pRowId, l, res, bcs, nds);
             }
             else if(needTau)
             {
-               this->applyTau(rModelMatrix.real(), *pRowId, *pRowId, matIdx, res, eigs, bcs, nds, false);
+               this->applyTau(rModelMatrix.real(), *pRowId, *pRowId, l, res, bcs, nds, false);
             }
          }
       }
@@ -319,11 +324,11 @@ namespace Explicit {
                // Apply boundary condition
                if(needStencil)
                {
-                  this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
+                  this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pColId, l, res, bcs, nds);
                }
                else if(needTau)
                {
-                  this->applyTau(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds, isSplit);
+                  this->applyTau(rModelMatrix.real(), *pRowId, *pColId, l, res, bcs, nds, isSplit);
                }
             }
          }
@@ -346,11 +351,11 @@ namespace Explicit {
                // Apply boundary condition
                if(needStencil)
                {
-                  this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds);
+                  this->applyGalerkinStencil(rModelMatrix.real(), *pRowId, *pColId, l, res, bcs, nds);
                }
                else if(needTau)
                {
-                  this->applyTau(rModelMatrix.real(), *pRowId, *pColId, matIdx, res, eigs, bcs, nds, isSplit);
+                  this->applyTau(rModelMatrix.real(), *pRowId, *pColId, l, res, bcs, nds, isSplit);
                }
             }
          }
@@ -363,7 +368,9 @@ namespace Explicit {
 
    void ModelBackend::galerkinStencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
-      this->stencil(mat, fieldId, matIdx, res, eigs, makeSquare, bcs, nds);
+      assert(eigs.size() == 1);
+      int l = eigs.at(0);
+      this->stencil(mat, fieldId, l, res, makeSquare, bcs, nds);
    }
 
    void ModelBackend::explicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const std::size_t opId,  const SpectralFieldId colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const

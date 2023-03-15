@@ -69,7 +69,6 @@
 #include "QuICC/Math/Constants.hpp"
 #include "QuICC/Precision.hpp"
 
-#include <iostream>
 namespace QuICC {
 
 namespace Model {
@@ -83,7 +82,7 @@ namespace RTC {
 namespace Implicit {
 
    ModelBackend::ModelBackend()
-      : IRTCBackend()
+      : IRTCBackend(), mcTruncateQI(false)
    {
       this->enableSplitEquation(false);
    }

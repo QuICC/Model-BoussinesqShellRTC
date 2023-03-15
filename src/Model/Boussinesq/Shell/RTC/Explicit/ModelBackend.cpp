@@ -76,7 +76,7 @@ namespace RTC {
 namespace Explicit {
 
    ModelBackend::ModelBackend()
-      : IRTCBackend()
+      : IRTCBackend(), mcTruncateQI(false)
    {
       this->enableSplitEquation(false);
    }

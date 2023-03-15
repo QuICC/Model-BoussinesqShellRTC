@@ -139,6 +139,11 @@ namespace Implicit {
           * @param dropRows Number of rows to drop
           */
          internal::SystemInfo systemInfo(const SpectralFieldId& colId, const SpectralFieldId& rowId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin, const bool dropRows) const;
+
+         /**
+          * @brief Truncate quasi-inverse operators?
+          */
+         const bool mcTruncateQI;
    };
 
 } // Implicit

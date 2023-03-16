@@ -433,8 +433,16 @@ namespace Explicit {
          {
             auto Ra = effectiveRa(nds);
 
-            SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nN, nN, ri, ro);
-            decMat.real() = Ra*spasm.mat();
+            if(this->useSplitEquation())
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
+               decMat.real() = Ra*spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nN, nN, ri, ro);
+               decMat.real() = Ra*spasm.mat();
+            }
          }
          else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && 
                colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))

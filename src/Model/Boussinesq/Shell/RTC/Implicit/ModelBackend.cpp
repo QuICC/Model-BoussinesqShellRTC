@@ -82,7 +82,12 @@ namespace RTC {
 namespace Implicit {
 
    ModelBackend::ModelBackend()
-      : IRTCBackend(), mcTruncateQI(false)
+      : IRTCBackend(),
+#ifdef QUICC_TRANSFORM_CHEBYSHEV_TRUNCATE_QI
+      mcTruncateQI(true)
+#else
+      mcTruncateQI(false)
+#endif // QUICC_TRANSFORM_CHEBYSHEV_TRUNCATE_QI
    {
       this->enableSplitEquation(false);
    }

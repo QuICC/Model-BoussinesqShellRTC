@@ -19,6 +19,7 @@
 #include "QuICC/ModelOperator/Boundary.hpp"
 #include "QuICC/ModelOperator/SplitImplicitLinear.hpp"
 #include "QuICC/ModelOperator/SplitBoundary.hpp"
+#include "QuICC/ModelOperator/SplitBoundaryValue.hpp"
 #include "QuICC/ModelOperatorBoundary/FieldToRhs.hpp"
 #include "QuICC/ModelOperatorBoundary/SolverHasBc.hpp"
 #include "QuICC/ModelOperatorBoundary/SolverNoTau.hpp"
@@ -76,9 +77,14 @@ namespace RTC {
 namespace Explicit {
 
    ModelBackend::ModelBackend()
-      : IRTCBackend(), mcTruncateQI(false)
+      : IRTCBackend(),
+#ifdef QUICC_TRANSFORM_CHEBYSHEV_TRUNCATE_QI
+      mcTruncateQI(true)
+#else
+      mcTruncateQI(false)
+#endif // QUICC_TRANSFORM_CHEBYSHEV_TRUNCATE_QI
    {
-      this->enableSplitEquation(false);
+      this->enableSplitEquation(true);
    }
 
    ModelBackend::SpectralFieldIds ModelBackend::implicitFields(const SpectralFieldId& fId) const
@@ -119,8 +125,15 @@ namespace Explicit {
       // Operators are real
       info.isComplex = false;
 
-      // Use split operators
-      info.isSplitEquation = this->useSplitEquation();
+      // Splitting 4th poloidal equation into two systems
+      if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
+      {
+         info.isSplitEquation = this->useSplitEquation();
+      }
+      else
+      {
+         info.isSplitEquation = false;
+      }
 
       // Implicit coupled fields
       info.im = this->implicitFields(fId);
@@ -282,6 +295,26 @@ namespace Explicit {
       }
    }
 
+   void ModelBackend::splitBoundaryValueBlock(DecoupledZSparse& decMat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const NonDimensional::NdMap& nds) const
+   {
+      assert(eigs.size() == 1);
+
+      int l = eigs.at(0);
+      auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
+
+      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
+      {
+         decMat.real().resize(nN, 2);
+         decMat.imag().resize(nN, 2);
+
+         Eigen::Triplet<MHDFloat> valTop = {0, 0, 1.0};
+         Eigen::Triplet<MHDFloat> valBottom = {1, 1, 1.0};
+         std::vector<Eigen::Triplet<MHDFloat> > triplets = {valTop, valBottom};
+         decMat.real().setFromTriplets(triplets.begin(), triplets.end());
+         decMat.imag().setFromTriplets(triplets.begin(), triplets.end());
+      }
+   }
+
    void ModelBackend::modelMatrix(DecoupledZSparse& rModelMatrix, const std::size_t opId, const Equations::CouplingInformation::FieldId_range imRange, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
    {
       assert(eigs.size() == 1);
@@ -358,6 +391,14 @@ namespace Explicit {
                   this->applyTau(rModelMatrix.real(), *pRowId, *pColId, l, res, bcs, nds, isSplit);
                }
             }
+         }
+      }
+      // Split equation boundary value
+      else if(opId == ModelOperator::SplitBoundaryValue::id())
+      {
+         for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
+         {
+            this->splitBoundaryValueBlock(rModelMatrix, *pRowId, matIdx, res, eigs, nds);
          }
       }
       else

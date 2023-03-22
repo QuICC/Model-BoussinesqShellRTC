@@ -3,21 +3,12 @@
  * @brief Source of the implementation of the vector Navier-Stokes equation in the Boussinesq rotating thermal convection in a spherical shell model
  */
 
-// Configuration includes
-//
-
 // System includes
 //
 
-// External includes
-//
-
-// Class include
-//
-#include "QuICC/Model/Boussinesq/Shell/RTC/Momentum.hpp"
-
 // Project includes
 //
+#include "QuICC/Model/Boussinesq/Shell/RTC/Momentum.hpp"
 #include "QuICC/Typedefs.hpp"
 #include "QuICC/Math/Constants.hpp"
 #include "QuICC/NonDimensional/Ekman.hpp"

@@ -404,8 +404,6 @@ namespace RTC {
       int shiftR = this->nBc(fId);
       if(this->useGalerkin())
       {
-         shiftR = this->nBc(fId);
-
          gN = (nN - shiftR);
       }
       else

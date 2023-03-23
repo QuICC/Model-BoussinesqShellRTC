@@ -99,6 +99,8 @@ namespace Implicit {
       SpectralFieldId temp = std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR);
       SpectralFieldIds fields = {velTor, velPol, temp};
 
+      // sort the fields
+      std::sort(fields.begin(), fields.end());
       return fields;
    }
 

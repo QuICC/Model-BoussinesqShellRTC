@@ -84,7 +84,6 @@ namespace Explicit {
       mcTruncateQI(false)
 #endif // QUICC_TRANSFORM_CHEBYSHEV_TRUNCATE_QI
    {
-      this->enableSplitEquation(true);
    }
 
    ModelBackend::SpectralFieldIds ModelBackend::implicitFields(const SpectralFieldId& fId) const

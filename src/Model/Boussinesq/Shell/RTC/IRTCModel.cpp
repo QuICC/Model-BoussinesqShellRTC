@@ -44,11 +44,13 @@
 #include "QuICC/Io/Variable/ShellTorPolEnergyWriter.hpp"
 #include "QuICC/Io/Variable/ShellTorPolLSpectrumWriter.hpp"
 #include "QuICC/Io/Variable/ShellTorPolMSpectrumWriter.hpp"
+#include "QuICC/Io/Variable/FieldProbeWriter.hpp"
 #include "QuICC/Generator/States/RandomScalarState.hpp"
 #include "QuICC/Generator/States/RandomVectorState.hpp"
 #include "QuICC/Generator/States/ShellExactScalarState.hpp"
 #include "QuICC/Generator/States/ShellExactVectorState.hpp"
 #include "QuICC/Generator/States/Kernels/Shell/BenchmarkTempC1.hpp"
+#include "QuICC/Generator/States/Kernels/Shell/ScalarYllPerturbation.hpp"
 #include "QuICC/Generator/Visualizers/ScalarFieldVisualizer.hpp"
 #include "QuICC/Generator/Visualizers/VectorFieldVisualizer.hpp"
 #include "QuICC/Generator/Visualizers/SphericalVerticalFieldVisualizer.hpp"
@@ -135,6 +137,17 @@ namespace RTC {
                spKernel->setRatio(ratios);
                spKernel->init(-1e-4, 1e-4);
                spScalar->setSrcKernel(spKernel);
+            }
+            break;
+         case 5:
+            {
+               auto ri = spScalar->eqParams().nd(NonDimensional::Lower1d::id());
+               auto ro = spScalar->eqParams().nd(NonDimensional::Upper1d::id());
+               auto spKernel = std::make_shared<Physical::Kernel::Shell::ScalarYllPerturbation>();
+               const MHDFloat eps = 1./5;
+               const int m = 26;
+               spKernel->init(ri, ro, eps, m);
+               spScalar->setPhysicalKernel(spKernel);
             }
             break;
       }
@@ -300,6 +313,30 @@ namespace RTC {
 
       // Create nusselt number writer
       this->enableAsciiFile<Io::Variable::ShellNusseltWriter>("temperature_nusselt", "temperature_", PhysicalNames::Temperature::id(), spSim);
+
+      // Examples of physical space field probes
+      //
+
+      const bool probeVelocity = false;
+      const bool probeTemperature = false;
+
+      // Add Velocity probe
+      if(probeVelocity)
+      {
+         const std::vector<MHDFloat> pos = {1.10, Math::PI/2.0, 0};
+         auto spFile = std::make_shared<Io::Variable::FieldProbeWriter>("velocity_", spSim->ss().tag(), pos);
+         spFile->expect(PhysicalNames::Velocity::id());
+         spSim->addAsciiOutputFile(spFile);
+      }
+
+      // Add Temperature probe
+      if(probeTemperature)
+      {
+         const std::vector<MHDFloat> pos = {1.10, Math::PI/2.0, 0};
+         auto spFile = std::make_shared<Io::Variable::FieldProbeWriter>("temperature_", spSim->ss().tag(), pos);
+         spFile->expect(PhysicalNames::Temperature::id());
+         spSim->addAsciiOutputFile(spFile);
+      }
    }
 
 }

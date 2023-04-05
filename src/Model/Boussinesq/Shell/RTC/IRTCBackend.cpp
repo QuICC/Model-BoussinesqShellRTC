@@ -72,7 +72,7 @@ namespace Shell {
 namespace RTC {
 
    IRTCBackend::IRTCBackend()
-      : IModelBackend(), mUseGalerkin(false), mUseSplitEquation(false)
+      : IModelBackend()
    {
    }
 
@@ -104,26 +104,6 @@ namespace RTC {
       std::vector<bool> periodic = {false, false, false};
 
       return periodic;
-   }
-
-   void IRTCBackend::enableGalerkin(const bool flag)
-   {
-      this->mUseGalerkin = flag;
-   }
-
-   bool IRTCBackend::useGalerkin() const
-   {
-      return this->mUseGalerkin;
-   }
-
-   bool IRTCBackend::useSplitEquation() const
-   {
-      return this->mUseSplitEquation;
-   }
-
-   void IRTCBackend::enableSplitEquation(const bool tag)
-   {
-      this->mUseSplitEquation = tag;
    }
 
    std::map<std::string,MHDFloat> IRTCBackend::automaticParameters(const std::map<std::string,MHDFloat>& cfg) const

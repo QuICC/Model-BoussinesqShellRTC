@@ -116,10 +116,12 @@ class PhysicalModel(base_model.BaseModel):
         assert(eigs[0].is_integer())
         l = eigs[0]
 
+        ri, ro = (self.automatic_parameters(eq_params)['lower1d'], self.automatic_parameters(eq_params)['upper1d'])
+
         # Get boundary condition
         mat = None
         bc = self.convert_bc(eq_params,eigs,bcs,field_row,field_row)
-        mat = geo.stencil(res[0], bc, make_square)
+        mat = geo.stencil(res[0], ri, ro, bc, make_square)
 
         if mat is None:
             raise RuntimeError("Equations are not setup properly!")

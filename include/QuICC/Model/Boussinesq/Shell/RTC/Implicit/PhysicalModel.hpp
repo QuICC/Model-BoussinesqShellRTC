@@ -47,18 +47,23 @@ namespace Implicit {
          virtual ~PhysicalModel() = default;
 
          /// Python script/module name
-         virtual std::string PYMODULE() override;
+         virtual std::string PYMODULE() final;
+
+         /**
+          * @brief Initialize specialized backend
+          */
+         void init() final;
 
       protected:
 
       private:
    };
 
-}
-}
-}
-}
-}
-}
+} // Implicit
+} // RTC
+} // Shell
+} // Boussinesq
+} // MOdel
+} // QuICC
 
 #endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IMPLICIT_PHYSICALMODEL_HPP

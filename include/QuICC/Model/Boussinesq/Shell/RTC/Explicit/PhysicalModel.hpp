@@ -47,18 +47,23 @@ namespace Explicit {
          virtual ~PhysicalModel() = default;
 
          /// Python script/module name
-         virtual std::string PYMODULE() override;
+         virtual std::string PYMODULE() final;
+
+         /**
+          * @brief Initialize specialized backend
+          */
+         void init() final;
 
       protected:
 
       private:
    };
 
-}
-}
-}
-}
-}
-}
+} // Explicit
+} // RTC
+} // Shell
+} // Boussinesq
+} // Model
+} // QuICC
 
 #endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_EXPLICIT_PHYSICALMODEL_HPP

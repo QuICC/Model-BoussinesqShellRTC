@@ -57,7 +57,7 @@ rescale = False
 #res = [32, 32, 0]
 #Ta = 1e7; Ek = Ta**-0.5
 #res = [32, 32, 0]
-#Ta = 1e8; Ek = Ta**-0.5; Rac = 31.534088376364; mc = 6 
+#Ta = 1e8; Ek = Ta**-0.5; Rac = 31.534088376364; mc = 6
 #res = [48, 48, 0]
 #Ta = 1e9; Ek = Ta**-0.5; Rac = 42.219154540505; mc = 9
 #res = [48, 48, 0]
@@ -86,7 +86,7 @@ rescale = False
 #res = [32, 32, 0]
 #Ta = 1e7; Ek = Ta**-0.5
 #res = [32, 32, 0]
-#Ta = 1e8; Ek = Ta**-0.5; Rac = 28.93487228774; mc = 5 
+#Ta = 1e8; Ek = Ta**-0.5; Rac = 28.93487228774; mc = 5
 #res = [48, 48, 0]
 #Ta = 1e9; Ek = Ta**-0.5; Rac = 32.817417129811; mc = 7
 #res = [48, 48, 0]
@@ -181,5 +181,5 @@ marginal_options['impose_symmetry'] = False
 marginal_options['use_spherical_evp'] = False
 marginal_options['curve_points'] = np.arange(max(1,m-3), m+10, 1)
 
-# Compute 
+# Compute
 MarginalCurve.compute(gevp_opts, marginal_options)

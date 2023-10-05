@@ -14,7 +14,7 @@
 
 // Class include
 //
-#include "QuICC/Model/Boussinesq/Shell/RTC/TransportKernel.hpp"
+#include "Model/Boussinesq//Shell/RTC/TransportKernel.hpp"
 
 // Project includes
 //

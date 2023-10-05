@@ -14,7 +14,7 @@
 
 // Class include
 //
-#include "QuICC/Model/Boussinesq/Shell/RTC/Transport.hpp"
+#include "Model/Boussinesq//Shell/RTC/Transport.hpp"
 
 // Project includes
 //
@@ -22,7 +22,7 @@
 #include "QuICC/PhysicalNames/Temperature.hpp"
 #include "QuICC/SolveTiming/Prognostic.hpp"
 #include "QuICC/Transform/Path/ScalarNl.hpp"
-#include "QuICC/Model/Boussinesq/Shell/RTC/TransportKernel.hpp"
+#include "Model/Boussinesq//Shell/RTC/TransportKernel.hpp"
 
 namespace QuICC {
 

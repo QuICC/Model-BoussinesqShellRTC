@@ -8,7 +8,7 @@
 
 // Project includes
 //
-#include "QuICC/Model/Boussinesq/Shell/RTC/Momentum.hpp"
+#include "Model/Boussinesq//Shell/RTC/Momentum.hpp"
 #include "QuICC/NonDimensional/Ekman.hpp"
 #include "QuICC/PhysicalNames/Velocity.hpp"
 #include "QuICC/SolveTiming/Prognostic.hpp"
@@ -16,7 +16,7 @@
 #include "QuICC/Transform/Path/I2CurlNl.hpp"
 #include "QuICC/Transform/Path/NegI2CurlCurlNl.hpp"
 #include "QuICC/Transform/Path/NegI4CurlCurlNl.hpp"
-#include "QuICC/Model/Boussinesq/Shell/RTC/MomentumKernel.hpp"
+#include "Model/Boussinesq//Shell/RTC/MomentumKernel.hpp"
 
 namespace QuICC {
 

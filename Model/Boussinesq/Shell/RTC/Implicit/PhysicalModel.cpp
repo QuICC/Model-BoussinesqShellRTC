@@ -1,15 +1,15 @@
 /**
  * @file PhysicalModel.cpp
- * @brief Source of the Boussinesq rotating thermal convection in a spherical shell (Toroidal/Poloidal formulation) without coupled solve (standard implementation)
+ * @brief Source of the Boussinesq rotating thermal convection in a spherical shell (Toroidal/Poloidal formulation)
  */
 
 // System includes
 //
 
-// Project includes
+// Project include
 //
-#include "QuICC/Model/Boussinesq/Shell/RTC/Explicit/PhysicalModel.hpp"
-#include "QuICC/Model/Boussinesq/Shell/RTC/Explicit/ModelBackend.hpp"
+#include "Model/Boussinesq//Shell/RTC/Implicit/PhysicalModel.hpp"
+#include "Model/Boussinesq//Shell/RTC/Implicit/ModelBackend.hpp"
 #include "QuICC/Model/PyModelBackend.hpp"
 
 namespace QuICC {
@@ -22,16 +22,16 @@ namespace Shell {
 
 namespace RTC {
 
-namespace Explicit {
+namespace Implicit {
 
    std::string PhysicalModel::PYMODULE()
    {
-      return "boussinesq.shell.rtc.explicit.physical_model";
+      return "boussinesq.shell.rtc.implicit.physical_model";
    }
 
    void PhysicalModel::init()
    {
-#ifdef QUICC_MODEL_BOUSSINESQSHELLRTC_EXPLICIT_BACKEND_CPP
+#ifdef QUICC_MODEL_BOUSSINESQSHELLRTC_IMPLICIT_BACKEND_CPP
       IPhysicalModel<Simulation,StateGenerator,VisualizationGenerator>::init();
 
       this->mpBackend = std::make_shared<ModelBackend>();
@@ -42,7 +42,7 @@ namespace Explicit {
 #endif
    }
 
-} // Explicit
+} // Implicit
 } // RTC
 } // Shell
 } // Boussinesq

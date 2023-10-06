@@ -14,12 +14,12 @@
 
 // Class include
 //
-#include "QuICC/Model/Boussinesq/Shell/RTC/IRTCModel.hpp"
+#include "Model/Boussinesq/Shell/RTC/IRTCModel.hpp"
 
 // Project includes
 //
-#include "QuICC/Model/Boussinesq/Shell/RTC/Transport.hpp"
-#include "QuICC/Model/Boussinesq/Shell/RTC/Momentum.hpp"
+#include "Model/Boussinesq/Shell/RTC/Transport.hpp"
+#include "Model/Boussinesq/Shell/RTC/Momentum.hpp"
 #include "Model/Boussinesq/Shell/RTC/gitHash.hpp"
 #include "QuICC/Enums/FieldIds.hpp"
 #include "QuICC/PhysicalNames/Temperature.hpp"

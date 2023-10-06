@@ -12,7 +12,7 @@
 
 // Project includes
 //
-#include "QuICC/Model/Boussinesq/Shell/RTC/IRTCModel.hpp"
+#include "Model/Boussinesq/Shell/RTC/IRTCModel.hpp"
 #include "QuICC/SpatialScheme/3D/SLFl.hpp"
 
 namespace QuICC {

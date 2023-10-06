@@ -8,8 +8,8 @@
 
 // Project includes
 //
-#include "Model/Boussinesq//Shell/RTC/Explicit/PhysicalModel.hpp"
-#include "Model/Boussinesq//Shell/RTC/Explicit/ModelBackend.hpp"
+#include "Model/Boussinesq/Shell/RTC/Explicit/PhysicalModel.hpp"
+#include "Model/Boussinesq/Shell/RTC/Explicit/ModelBackend.hpp"
 #include "QuICC/Model/PyModelBackend.hpp"
 
 namespace QuICC {

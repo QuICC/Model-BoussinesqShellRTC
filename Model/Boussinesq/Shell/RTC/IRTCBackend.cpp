@@ -146,46 +146,6 @@ namespace RTC {
       return nBc;
    }
 
-   MHDFloat IRTCBackend::effectiveRa(const NonDimensional::NdMap& nds) const
-   {
-      auto effRa = nds.find(NonDimensional::Rayleigh::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      // Scaled on gap width
-      if(ro != 1.0)
-      {
-         auto T = 1.0/nds.find(NonDimensional::Ekman::id())->second->value();
-         effRa *= T/ro;
-      }
-
-      return effRa;
-   }
-
-   MHDFloat IRTCBackend::effectiveBg(const NonDimensional::NdMap& nds) const
-   {
-      MHDFloat effBg = 1.0;
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-      auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
-      auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
-
-      if(ro == 1.0)
-      {
-         // Nothing
-      }
-      // gap width and internal heating
-      else if(heatingMode == 0)
-      {
-         effBg = 2.0/(ro*(1.0 + rratio));
-      }
-      // gap width and differential heating
-      else if(heatingMode == 1)
-      {
-         effBg = ro*ro*rratio;
-      }
-
-      return effBg;
-   }
-
    void IRTCBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int l, const Resolution& res, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitOperator) const
    {
       auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
@@ -376,6 +336,49 @@ namespace RTC {
       mat = qId.mat() * (mat * S);
    }
 
+namespace implDetails {
+
+   MHDFloat effectiveRa(const NonDimensional::NdMap& nds)
+   {
+      auto effRa = nds.find(NonDimensional::Rayleigh::id())->second->value();
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+
+      // Scaled on gap width
+      if(ro != 1.0)
+      {
+         auto T = 1.0/nds.find(NonDimensional::Ekman::id())->second->value();
+         effRa *= T/ro;
+      }
+
+      return effRa;
+   }
+
+   MHDFloat effectiveBg(const NonDimensional::NdMap& nds)
+   {
+      MHDFloat effBg = 1.0;
+      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
+      auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
+      auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
+
+      if(ro == 1.0)
+      {
+         // Nothing
+      }
+      // gap width and internal heating
+      else if(heatingMode == 0)
+      {
+         effBg = 2.0/(ro*(1.0 + rratio));
+      }
+      // gap width and differential heating
+      else if(heatingMode == 1)
+      {
+         effBg = ro*ro*rratio;
+      }
+
+      return effBg;
+   }
+
+} // namespace implDetails
 } // namespace RTC
 } // namespace Shell
 } // namespace Boussinesq

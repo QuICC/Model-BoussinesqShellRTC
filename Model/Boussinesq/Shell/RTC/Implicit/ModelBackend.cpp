@@ -618,14 +618,7 @@ struct BlockOptionsImpl : public details::BlockOptions
                        const auto T =
                           1.0 /
                           nds.find(NonDimensional::Ekman::id())->second->value();
-                       auto Ra = nds.find(NonDimensional::Rayleigh::id())
-                                          ->second->value();
-                       // Scaled on gap width
-                       if(ro != 1.0)
-                       {
-                          const auto T = 1.0/nds.find(NonDimensional::Ekman::id())->second->value();
-                          Ra *= T/ro;
-                       }
+                       const auto Ra = RTC::implDetails::effectiveRa(nds);
 
                        SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nNr, nNc, ri, ro);
                        bMat = -Ra*i4r4.mat();
@@ -1077,13 +1070,7 @@ std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
 
             const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
             const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-            auto Ra = nds.find(NonDimensional::Rayleigh::id())->second->value();
-            // Scaled on gap width
-            if(ro != 1.0)
-            {
-               const auto T = 1.0/nds.find(NonDimensional::Ekman::id())->second->value();
-               Ra *= T/ro;
-            }
+            const auto Ra = RTC::implDetails::effectiveRa(nds);
 
             SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nNr, nNc, ri, ro);
             bMat = Ra*spasm.mat();
@@ -1114,21 +1101,7 @@ std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
             const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
             const auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
             const auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
-            MHDFloat bg = 1.0;
-            if(ro == 1.0)
-            {
-               // Nothing
-            }
-            // gap width and internal heating
-            else if(heatingMode == 0)
-            {
-               bg = 2.0/(ro*(1.0 + rratio));
-            }
-            // gap width and differential heating
-            else if(heatingMode == 1)
-            {
-               bg = ro*ro*rratio;
-            }
+            const auto bg = RTC::implDetails::effectiveBg(nds);
             const auto dl = static_cast<MHDFloat>(l);
             const auto ll1 = dl*(dl + 1.0);
 

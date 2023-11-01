@@ -67,20 +67,6 @@ namespace RTC {
 
       protected:
          /**
-          * @brief Compute effective Rayleigh number
-          *
-          * @param nds  Nondimensional parameters
-          */
-         MHDFloat effectiveRa(const NonDimensional::NdMap& nds) const;
-
-         /**
-          * @brief Compute effective thermal backgroundn
-          *
-          * @param nds  Nondimensional parameters
-          */
-         MHDFloat effectiveBg(const NonDimensional::NdMap& nds) const;
-
-         /**
           * @brief Number of boundary conditions
           *
           * @fId  Field ID for which to get number of BC
@@ -131,6 +117,23 @@ namespace RTC {
       private:
    };
 
+namespace implDetails {
+
+   /**
+    * @brief Compute effective Rayleigh number
+    *
+    * @param nds  Nondimensional parameters
+    */
+   MHDFloat effectiveRa(const NonDimensional::NdMap& nds);
+
+   /**
+    * @brief Compute effective thermal backgroundn
+    *
+    * @param nds  Nondimensional parameters
+    */
+   MHDFloat effectiveBg(const NonDimensional::NdMap& nds);
+
+} // namespace implDetails
 } // namespace RTC
 } // namespace Shell
 } // namespace Boussinesq

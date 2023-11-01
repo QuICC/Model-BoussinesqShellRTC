@@ -598,8 +598,7 @@ struct BlockOptionsImpl : public details::BlockOptions
                dUp.realOp = realOpUpper;
                dUp.imagOp = nullptr;
            }
-           else if (this->useLinearized() &&
-                    colId == std::make_pair(PhysicalNames::Temperature::id(),
+           else if (colId == std::make_pair(PhysicalNames::Temperature::id(),
                                 FieldComponents::Spectral::SCALAR))
            {
 

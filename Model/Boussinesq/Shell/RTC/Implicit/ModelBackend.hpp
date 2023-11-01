@@ -29,22 +29,6 @@ namespace RTC {
 
 namespace Implicit {
 
-   namespace internal {
-      struct SystemInfo
-      {
-         int systemSize;
-         int blockRows;
-         int blockCols;
-         int startRow;
-         int startCol;
-
-         SystemInfo(const int size, const int rows, const int cols, const int row, const int col)
-            : systemSize(size), blockRows(rows), blockCols(cols), startRow(row), startCol(col)
-         {
-         };
-      };
-   }
-
    /**
     * @brief Interface for model backend
     */

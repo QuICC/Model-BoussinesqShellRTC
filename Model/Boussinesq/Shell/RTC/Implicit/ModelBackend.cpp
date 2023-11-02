@@ -10,63 +10,63 @@
 // Project includes
 //
 #include "Model/Boussinesq/Shell/RTC/Implicit/ModelBackend.hpp"
-#include "Types/Internal/Math.hpp"
-#include "QuICC/ModelOperator/Time.hpp"
-#include "QuICC/ModelOperator/ImplicitLinear.hpp"
-#include "QuICC/ModelOperator/ExplicitLinear.hpp"
-#include "QuICC/ModelOperator/ExplicitNonlinear.hpp"
-#include "QuICC/ModelOperator/ExplicitNextstep.hpp"
-#include "QuICC/ModelOperator/Stencil.hpp"
+#include "QuICC/Bc/Name/FixedFlux.hpp"
+#include "QuICC/Bc/Name/FixedTemperature.hpp"
+#include "QuICC/Bc/Name/NoSlip.hpp"
+#include "QuICC/Bc/Name/StressFree.hpp"
+#include "QuICC/Enums/FieldIds.hpp"
+#include "QuICC/Equations/CouplingIndexType.hpp"
 #include "QuICC/ModelOperator/Boundary.hpp"
-#include "QuICC/ModelOperator/SplitImplicitLinear.hpp"
+#include "QuICC/ModelOperator/ExplicitLinear.hpp"
+#include "QuICC/ModelOperator/ExplicitNextstep.hpp"
+#include "QuICC/ModelOperator/ExplicitNonlinear.hpp"
+#include "QuICC/ModelOperator/ImplicitLinear.hpp"
 #include "QuICC/ModelOperator/SplitBoundary.hpp"
+#include "QuICC/ModelOperator/SplitImplicitLinear.hpp"
+#include "QuICC/ModelOperator/Stencil.hpp"
+#include "QuICC/ModelOperator/Time.hpp"
 #include "QuICC/ModelOperatorBoundary/FieldToRhs.hpp"
 #include "QuICC/ModelOperatorBoundary/SolverHasBc.hpp"
 #include "QuICC/ModelOperatorBoundary/SolverNoTau.hpp"
 #include "QuICC/ModelOperatorBoundary/Stencil.hpp"
-#include "QuICC/Enums/FieldIds.hpp"
-#include "QuICC/Bc/Name/FixedTemperature.hpp"
-#include "QuICC/Bc/Name/FixedFlux.hpp"
-#include "QuICC/Bc/Name/StressFree.hpp"
-#include "QuICC/Bc/Name/NoSlip.hpp"
-#include "QuICC/PhysicalNames/Velocity.hpp"
-#include "QuICC/PhysicalNames/Temperature.hpp"
-#include "QuICC/NonDimensional/Prandtl.hpp"
-#include "QuICC/NonDimensional/Rayleigh.hpp"
+#include "QuICC/NonDimensional/CflInertial.hpp"
 #include "QuICC/NonDimensional/Ekman.hpp"
 #include "QuICC/NonDimensional/Heating.hpp"
-#include "QuICC/NonDimensional/RRatio.hpp"
 #include "QuICC/NonDimensional/Lower1d.hpp"
+#include "QuICC/NonDimensional/Prandtl.hpp"
+#include "QuICC/NonDimensional/RRatio.hpp"
+#include "QuICC/NonDimensional/Rayleigh.hpp"
 #include "QuICC/NonDimensional/Upper1d.hpp"
-#include "QuICC/NonDimensional/CflInertial.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/ICondition.hpp"
-#include "QuICC/Tools/IdToHuman.hpp"
+#include "QuICC/PhysicalNames/Temperature.hpp"
+#include "QuICC/PhysicalNames/Velocity.hpp"
 #include "QuICC/Resolutions/Tools/IndexCounter.hpp"
-#include "QuICC/Equations/CouplingIndexType.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Id.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/D1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/D2.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/ICondition.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/InsulatingShell.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/Operator.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/R1D1DivR1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/Value.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2D1.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2SphLapl.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y3.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4D1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4D1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl2.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/Operator.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/Value.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/D1.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/D2.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/R1D1DivR1.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Boundary/InsulatingShell.hpp"
-#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/Value.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Id.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/D1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/R1D1DivR1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/Value.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/Stencil/ValueD2.hpp"
+#include "QuICC/Tools/IdToHuman.hpp"
+#include "Types/Internal/Math.hpp"
 
 namespace QuICC {
 
@@ -80,957 +80,1193 @@ namespace RTC {
 
 namespace Implicit {
 
-   ModelBackend::ModelBackend()
-      : IRTCBackend(),
+namespace implDetails {
+
+/**
+ * @brief Specific options for current model
+ */
+struct BlockOptionsImpl : public details::BlockOptions
+{
+   /**
+    * @brief default ctor
+    */
+   BlockOptionsImpl() = default;
+
+   /**
+    * @brief default dtor
+    */
+   virtual ~BlockOptionsImpl() = default;
+
+   /// Harmonic order m
+   int m;
+   /// Use truncated quasi-inverse?
+   bool truncateQI;
+   /// Boundary condition
+   std::size_t bcId;
+   /// Split operator for influence matrix?
+   bool isSplitOperator;
+};
+} // namespace implDetails
+
+ModelBackend::ModelBackend() :
+    IRTCBackend(),
 #ifdef QUICC_TRANSFORM_CHEBYSHEV_TRUNCATE_QI
-      mcTruncateQI(true)
+    mcTruncateQI(true)
 #else
-      mcTruncateQI(false)
+    mcTruncateQI(false)
 #endif // QUICC_TRANSFORM_CHEBYSHEV_TRUNCATE_QI
+{}
+
+void ModelBackend::enableSplitEquation(const bool flag)
+{
+   if (flag)
    {
+      throw std::logic_error(
+         "Split equation for implicit model is not implemented");
+   }
+   else
+   {
+      IRTCBackend::enableSplitEquation(flag);
+   }
+}
+
+bool ModelBackend::isComplex(const SpectralFieldId& fId) const
+{
+   return true;
+}
+
+ModelBackend::SpectralFieldIds ModelBackend::implicitFields(
+   const SpectralFieldId& fId) const
+{
+   SpectralFieldId velTor = std::make_pair(PhysicalNames::Velocity::id(),
+      FieldComponents::Spectral::TOR);
+   SpectralFieldId velPol = std::make_pair(PhysicalNames::Velocity::id(),
+      FieldComponents::Spectral::POL);
+   SpectralFieldId temp = std::make_pair(PhysicalNames::Temperature::id(),
+      FieldComponents::Spectral::SCALAR);
+   SpectralFieldIds fields = {velTor, velPol, temp};
+
+   // sort the fields
+   std::sort(fields.begin(), fields.end());
+   return fields;
+}
+
+ModelBackend::SpectralFieldIds ModelBackend::explicitLinearFields(
+   const SpectralFieldId& fId) const
+{
+   SpectralFieldIds fields;
+   if (fId == std::make_pair(PhysicalNames::Temperature::id(),
+                 FieldComponents::Spectral::SCALAR))
+   {
+      fields.push_back(std::make_pair(PhysicalNames::Velocity::id(),
+         FieldComponents::Spectral::POL));
    }
 
-   void ModelBackend::enableSplitEquation(const bool flag)
+   return fields;
+}
+
+ModelBackend::SpectralFieldIds ModelBackend::explicitNonlinearFields(
+   const SpectralFieldId& fId) const
+{
+   SpectralFieldIds fields;
+   if (fId == std::make_pair(PhysicalNames::Temperature::id(),
+                 FieldComponents::Spectral::SCALAR))
    {
-      if(flag)
-      {
-         throw std::logic_error("Split equation for implicit model is not implemented");
-      }
-      else
-      {
-         IRTCBackend::enableSplitEquation(flag);
-      }
+      fields.push_back(std::make_pair(PhysicalNames::Temperature::id(),
+         FieldComponents::Spectral::SCALAR));
    }
 
-   ModelBackend::SpectralFieldIds ModelBackend::implicitFields(const SpectralFieldId& fId) const
-   {
-      SpectralFieldId velTor = std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::TOR);
-      SpectralFieldId velPol = std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL);
-      SpectralFieldId temp = std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR);
-      SpectralFieldIds fields = {velTor, velPol, temp};
+   return fields;
+}
 
-      // sort the fields
-      std::sort(fields.begin(), fields.end());
-      return fields;
+void ModelBackend::equationInfo(EquationInfo& info, const SpectralFieldId& fId,
+   const Resolution& res) const
+{
+   // Operators are complex
+   info.isComplex = this->isComplex(fId);
+
+   // Use split operators
+   if (fId == std::make_pair(PhysicalNames::Velocity::id(),
+                 FieldComponents::Spectral::POL))
+   {
+      info.isSplitEquation = this->useSplitEquation();
+   }
+   else
+   {
+      info.isSplitEquation = false;
    }
 
-   ModelBackend::SpectralFieldIds ModelBackend::explicitLinearFields(const SpectralFieldId& fId) const
+   // Implicit coupled fields
+   info.im = this->implicitFields(fId);
+
+   // Explicit linear terms
+   info.exL = this->explicitLinearFields(fId);
+
+   // Explicit nonlinear terms
+   info.exNL = this->explicitNonlinearFields(fId);
+
+   // Explicit nextstep terms
+   info.exNS.clear();
+
+   // Index mode
+   info.indexMode =
+      static_cast<int>(Equations::CouplingIndexType::SLOWEST_SINGLE_RHS);
+}
+
+void ModelBackend::operatorInfo(OperatorInfo& info, const SpectralFieldId& fId,
+   const Resolution& res, const Equations::Tools::ICoupling& coupling,
+   const BcMap& bcs) const
+{
+   // Loop overall matrices/eigs
+   for (int idx = 0; idx < info.tauN.size(); ++idx)
    {
-      SpectralFieldIds fields;
-      if(fId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
-      {
-         fields.push_back(std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL));
-      }
-
-      return fields;
-   }
-
-   ModelBackend::SpectralFieldIds ModelBackend::explicitNonlinearFields(const SpectralFieldId& fId) const
-   {
-      SpectralFieldIds fields;
-      if(fId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
-      {
-         fields.push_back(std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR));
-      }
-
-      return fields;
-   }
-
-   void ModelBackend::equationInfo(EquationInfo& info, const SpectralFieldId& fId, const Resolution& res) const
-   {
-      // Operators are complex
-      info.isComplex = true;
-
-      // Use split operators
-      if(fId == std::make_pair(PhysicalNames::Velocity::id(), FieldComponents::Spectral::POL))
-      {
-         info.isSplitEquation = this->useSplitEquation();
-      }
-      else
-      {
-         info.isSplitEquation = false;
-      }
-
-      // Implicit coupled fields
-      info.im = this->implicitFields(fId);
-
-      // Explicit linear terms
-      info.exL = this->explicitLinearFields(fId);
-
-      // Explicit nonlinear terms
-      info.exNL = this->explicitNonlinearFields(fId);
-
-      // Explicit nextstep terms
-      info.exNS.clear();
-
-      // Index mode
-      info.indexMode = static_cast<int>(Equations::CouplingIndexType::SLOWEST_SINGLE_RHS);
-   }
-
-   void ModelBackend::operatorInfo(OperatorInfo& info, const SpectralFieldId& fId, const Resolution& res, const Equations::Tools::ICoupling& coupling, const BcMap& bcs) const
-   {
-      // Loop overall matrices/eigs
-      for(int idx = 0; idx < info.tauN.size(); ++idx)
-      {
-         auto eigs = coupling.getIndexes(res, idx);
-
-         int tN, gN, rhs;
-         ArrayI shift(3);
-
-         this->blockInfo(tN, gN, shift, rhs, fId, res, eigs.at(0), bcs);
-
-         info.tauN(idx) = tN;
-         info.galN(idx) = gN;
-         info.galShift.row(idx) = shift;
-         info.rhsCols(idx) = rhs;
-
-         // Compute system size
-         int sN = 0;
-         for(auto f: this->implicitFields(fId))
-         {
-            this->blockInfo(tN, gN, shift, rhs, f, res, eigs.at(0), bcs);
-            sN += gN;
-         }
-
-         if(sN == 0)
-         {
-            sN = info.galN(idx);
-         }
-
-         info.sysN(idx) = sN;
-      }
-   }
-
-   void ModelBackend::implicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplitEquation) const
-   {
-      assert(eigs.size() == 1);
-      int m = eigs.at(0);
-
-      // Compute system size
-      const auto sysInfo = systemInfo(rowId, colId, m, res, bcs, this->useGalerkin(), false);
-      const auto& sysN = sysInfo.systemSize;
-      const auto& baseRowShift = sysInfo.startRow;
-      const auto& baseColShift = sysInfo.startCol;
-      auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
-
-      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      if(decMat.real().size() == 0)
-      {
-         decMat.real().resize(sysN,sysN);
-         decMat.imag().resize(sysN,sysN);
-      }
-      assert(decMat.real().rows() == sysN);
-      assert(decMat.real().cols() == sysN);
-      assert(decMat.imag().rows() == sysN);
-      assert(decMat.imag().cols() == sysN);
+      auto eigs = coupling.getIndexes(res, idx);
 
       int tN, gN, rhs;
       ArrayI shift(3);
 
-      int rowShift = baseRowShift;
-      int colShift = baseColShift;
-      if(rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR))
-      {
-         if(rowId == colId)
-         {
-            const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
-            const auto T = 1.0/Ek;
+      this->blockInfo(tN, gN, shift, rhs, fId, res, eigs.at(0), bcs);
 
-            for(int l = m; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               if(l > 0)
-               {
-                  const auto dl = static_cast<MHDFloat>(l);
-                  const auto invlapl = 1.0/(dl*(dl + 1.0));
-                  SparseSM::Chebyshev::LinearMap::I2Y2SphLapl i2r2lapl(nN, nN, ri, ro, l);
-                  SparseMatrix bMat = i2r2lapl.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
-
-                  SparseSM::Chebyshev::LinearMap::I2Y2 i2r2(nN, nN, ri, ro);
-                  bMat = m*T*invlapl*i2r2.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.imag(), bMat, rowShift, colShift);
-               }
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-         }
-         else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
-         {
-            auto coriolis = [](const int l, const int m){
-               return (l - MHD_MP(1.0))*(l + MHD_MP(1.0))*Internal::Math::sqrt(((l - m)*(l + m))/((MHD_MP(2.0)*l - MHD_MP(1.0))*(MHD_MP(2.0)*l + MHD_MP(1.0))));
-            };
-
-            const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
-            const auto T = 1.0/Ek;
-
-            this->blockInfo(tN, gN, shift, rhs, rowId, res, m, bcs);
-
-            rowShift = baseRowShift + gN;
-            colShift = baseColShift;
-            for(int l = m+1; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               if(l > 0)
-               {
-                  const auto dl = static_cast<Internal::MHDFloat>(l);
-                  const auto invlapl = 1.0/(dl*(dl + 1.0));
-                  SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
-                  auto norm = (dl - MHD_MP(1.0))*coriolis(l, m);
-                  SparseMatrix bMat = -static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
-
-                  SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
-                  norm = -coriolis(l, m);
-                  bMat += -static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
-
-               }
-
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-
-            this->blockInfo(tN, gN, shift, rhs, colId, res, m, bcs);
-            rowShift = baseRowShift;
-            colShift = baseColShift + gN;
-            for(int l = m; l < nL - 1; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               if(l > 0)
-               {
-                  const auto dl = static_cast<Internal::MHDFloat>(l);
-                  const auto invlapl = MHD_MP(1.0)/(dl*(dl + MHD_MP(1.0)));
-                  SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nN, nN, ri, ro);
-                  auto norm = -(dl + MHD_MP(2.0))*coriolis(l+1, m);
-                  SparseMatrix bMat = -static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
-
-                  SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nN, nN, ri, ro);
-                  norm = -coriolis(l+1, m);
-                  bMat += -static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
-
-               }
-
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-         }
-      }
-      else if(rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
-      {
-         if(rowId == colId)
-         {
-            const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
-            const auto T = 1.0/Ek;
-
-            for(int l = m; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               if(l > 0)
-               {
-                  const auto dl = static_cast<Internal::MHDFloat>(l);
-                  const auto invlapl = MHD_MP(1.0)/(dl*(dl + MHD_MP(1.0)));
-                  SparseSM::Chebyshev::LinearMap::I4Y4SphLapl2 diffusion(nN, nN, ri, ro, l);
-                  SparseMatrix bMat = diffusion.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-
-                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
-                  SparseSM::Chebyshev::LinearMap::I4Y4SphLapl coriolis(nN, nN, ri, ro, l);
-                  bMat = static_cast<MHDFloat>(m*T*invlapl)*coriolis.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.imag(), bMat, rowShift, colShift);
-               }
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-         }
-         else if(colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR))
-         {
-            auto coriolis = [](const int l, const int m){
-               return (l - MHD_MP(1.0))*(l + MHD_MP(1.0))*Internal::Math::sqrt(((l - m)*(l + m))/((MHD_MP(2.0)*l - MHD_MP(1.0))*(MHD_MP(2.0)*l + MHD_MP(1.0))));
-            };
-
-            const auto Ek = nds.find(NonDimensional::Ekman::id())->second->value();
-            const auto T = 1.0/Ek;
-
-            this->blockInfo(tN, gN, shift, rhs, rowId, res, m, bcs);
-            rowShift = baseRowShift + gN;
-            colShift = baseColShift;
-            for(int l = m+1; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               if(l > 0)
-               {
-                  const auto dl = static_cast<MHDFloat>(l);
-                  const auto invlapl = 1.0/(dl*(dl + 1.0));
-                  SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
-                  auto norm = (dl - 1.0)*coriolis(l, m);
-                  SparseMatrix bMat = static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
-                  SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
-                  norm = -coriolis(l, m);
-                  bMat += static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
-               }
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-
-            this->blockInfo(tN, gN, shift, rhs, colId, res, m, bcs);
-            rowShift = baseRowShift;
-            colShift = baseColShift + gN;
-            for(int l = m; l < nL - 1; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               if(l > 0)
-               {
-                  const auto dl = static_cast<MHDFloat>(l);
-                  const auto invlapl = 1.0/(dl*(dl + 1.0));
-                  SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nN, nN, ri, ro);
-                  auto norm = -(dl + 2.0)*coriolis(l+1, m);
-                  SparseMatrix bMat = static_cast<MHDFloat>(norm*T*invlapl)*cor_r.mat();
-                  SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nN, nN, ri, ro);
-                  norm = -coriolis(l+1, m);
-                  bMat += static_cast<MHDFloat>(norm*T*invlapl)*cordr.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
-               }
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-         }
-         else if(colId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
-         {
-            const auto Ra = this->effectiveRa(nds);
-            for(int l = m; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               if(l > 0)
-               {
-                  SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nN, nN, ri, ro);
-                  SparseMatrix bMat = -Ra*i4r4.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-                  }
-                  this->addBlock(decMat.real(), bMat, rowShift, colShift);
-               }
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-         }
-      }
-      else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
-      {
-         if(rowId == colId)
-         {
-            auto Pr = nds.find(NonDimensional::Prandtl::id())->second->value();
-            auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
-
-            for(int l = m; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               SparseMatrix bMat;
-               if(heatingMode == 0)
-               {
-                  SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nN, nN, ri, ro, l);
-                  bMat = (1.0/Pr)*spasm.mat();
-               }
-               else
-               {
-                  SparseSM::Chebyshev::LinearMap::I2Y3SphLapl spasm(nN, nN, ri, ro, l);
-                  bMat = (1.0/Pr)*spasm.mat();
-               }
-               if(this->useGalerkin())
-               {
-                  this->applyGalerkinStencil(bMat, rowId, colId, l, res, bcs, nds);
-               }
-               this->addBlock(decMat.real(), bMat, rowShift, colShift);
-
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-               colShift += gN;
-            }
-         }
-      }
-      else
-      {
-         //throw std::logic_error("Equations are not setup properly");
-      }
-   }
-
-   void ModelBackend::timeBlock(DecoupledZSparse& decMat, const SpectralFieldId& fieldId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
-   {
-      assert(eigs.size() == 1);
-      int m = eigs.at(0);
+      info.tauN(idx) = tN;
+      info.galN(idx) = gN;
+      info.galShift.row(idx) = shift;
+      info.rhsCols(idx) = rhs;
 
       // Compute system size
-      const auto sysInfo = systemInfo(fieldId, fieldId, m, res, bcs, this->useGalerkin(), false);
-      const auto& sysN = sysInfo.systemSize;
-      const auto& baseShift = sysInfo.startRow;
-      auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
-
-      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      // Resize matrices the first time
-      if(decMat.real().size() == 0)
+      int sN = 0;
+      for (auto f: this->implicitFields(fId))
       {
-         decMat.real().resize(sysN,sysN);
-         decMat.imag().resize(sysN,sysN);
+         this->blockInfo(tN, gN, shift, rhs, f, res, eigs.at(0), bcs);
+         sN += gN;
       }
-      assert(decMat.real().rows() == sysN);
-      assert(decMat.imag().rows() == sysN);
 
-      int tN, gN, rhs;
-      ArrayI shift(3);
-
-      if(fieldId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR))
+      if (sN == 0)
       {
-         int rowShift = baseShift;
-         for(int l = m; l < nL; l++)
+         sN = info.galN(idx);
+      }
+
+      info.sysN(idx) = sN;
+   }
+}
+
+std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
+   const SpectralFieldId& rowId, const SpectralFieldId& colId,
+   const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs,
+   const NonDimensional::NdMap& nds, const bool isSplitOperator) const
+{
+   std::vector<details::BlockDescription> descr;
+
+   // Create description with common options
+   auto getDescription = [&]() -> details::BlockDescription&
+   {
+      descr.push_back({});
+      auto& d = descr.back();
+      auto opts = std::make_shared<implDetails::BlockOptionsImpl>();
+      opts->m = eigs.at(0);
+      opts->bcId = bcs.find(colId.first)->second;
+      opts->truncateQI = this->mcTruncateQI;
+      opts->isSplitOperator = isSplitOperator;
+      d.opts = opts;
+
+      return d;
+   };
+
+   if (rowId == std::make_pair(PhysicalNames::Velocity::id(),
+                   FieldComponents::Spectral::TOR))
+   {
+      if (rowId == colId)
+      {
+         // Real part of operator
+         auto realOp = [](const int nNr, const int nNc, const int l,
+                          std::shared_ptr<details::BlockOptions> opts,
+                          const NonDimensional::NdMap& nds)
          {
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-            this->blockInfo(tN, gN, shift, rhs, fieldId, res, l, bcs);
-            SparseMatrix bMat;
-            if(l > 0)
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
             {
-               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-               bMat = spasm.mat();
-               if(this->useGalerkin())
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+               SparseSM::Chebyshev::LinearMap::I2Y2SphLapl i2r2lapl(nNr, nNc,
+                  ri, ro, l);
+               bMat = i2r2lapl.mat();
+            }
+
+            return bMat;
+         };
+
+         // Imaginary part of operator
+         auto imagOp = [](const int nNr, const int nNc, const int l,
+                          std::shared_ptr<details::BlockOptions> opts,
+                          const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               auto& o =
+                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(
+                     opts);
+
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+               const auto T =
+                  1.0 / nds.find(NonDimensional::Ekman::id())->second->value();
+               const auto dl = static_cast<MHDFloat>(l);
+               const auto invlapl = 1.0 / (dl * (dl + 1.0));
+
+               SparseSM::Chebyshev::LinearMap::I2Y2 i2r2(nNr, nNc, ri, ro);
+               bMat = o.m * T * invlapl * i2r2.mat();
+            }
+
+            return bMat;
+         };
+
+         // Create block diagonal operator
+         auto& d = getDescription();
+         d.nRowShift = 0;
+         d.nColShift = 0;
+         d.realOp = realOp;
+         d.imagOp = imagOp;
+      }
+      else if (colId == std::make_pair(PhysicalNames::Velocity::id(),
+                           FieldComponents::Spectral::POL))
+      {
+         // Real part of first lower diagonal
+         auto realOpLower = [](const int nNr, const int nNc, const int l,
+                               std::shared_ptr<details::BlockOptions> opts,
+                               const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               auto& o =
+                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(
+                     opts);
+
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+
+               auto coriolis = [](const int l, const int m)
                {
-                  this->applyGalerkinStencil(bMat, fieldId, fieldId, l, res, bcs, nds);
-               }
+                  return (l - MHD_MP(1.0)) * (l + MHD_MP(1.0)) *
+                         Internal::Math::sqrt(
+                            ((l - m) * (l + m)) /
+                            ((MHD_MP(2.0) * l - MHD_MP(1.0)) *
+                               (MHD_MP(2.0) * l + MHD_MP(1.0))));
+               };
+
+               const auto T =
+                  1.0 / nds.find(NonDimensional::Ekman::id())->second->value();
+               const auto dl = static_cast<Internal::MHDFloat>(l);
+               const auto invlapl = 1.0 / (dl * (dl + 1.0));
+               auto norm = (dl - MHD_MP(1.0)) * coriolis(l, o.m);
+
+               SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nNr, nNc, ri, ro);
+               bMat = -static_cast<MHDFloat>(norm * T * invlapl) * cor_r.mat();
+
+               SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nNr, nNc, ri, ro);
+               norm = -coriolis(l, o.m);
+               bMat += -static_cast<MHDFloat>(norm * T * invlapl) * cordr.mat();
+            }
+
+            return bMat;
+         };
+
+         // Create first lower diagonal operator
+         auto& dLow = getDescription();
+         dLow.nRowShift = 1;
+         dLow.nColShift = 0;
+         dLow.realOp = realOpLower;
+         dLow.imagOp = nullptr;
+
+         // Real part of first upper diagonal
+         auto realOpUpper = [](const int nNr, const int nNc, const int l,
+                               std::shared_ptr<details::BlockOptions> opts,
+                               const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               auto& o =
+                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(
+                     opts);
+
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+
+               auto coriolis = [](const int l, const int m)
+               {
+                  return (l - MHD_MP(1.0)) * (l + MHD_MP(1.0)) *
+                         Internal::Math::sqrt(
+                            ((l - m) * (l + m)) /
+                            ((MHD_MP(2.0) * l - MHD_MP(1.0)) *
+                               (MHD_MP(2.0) * l + MHD_MP(1.0))));
+               };
+
+               const auto T =
+                  1.0 / nds.find(NonDimensional::Ekman::id())->second->value();
+               const auto dl = static_cast<Internal::MHDFloat>(l);
+               const auto invlapl = MHD_MP(1.0) / (dl * (dl + MHD_MP(1.0)));
+
+               SparseSM::Chebyshev::LinearMap::I2Y1 cor_r(nNr, nNc, ri, ro);
+               auto norm = -(dl + MHD_MP(2.0)) * coriolis(l + 1, o.m);
+               bMat = -static_cast<MHDFloat>(norm * T * invlapl) * cor_r.mat();
+
+               SparseSM::Chebyshev::LinearMap::I2Y2D1 cordr(nNr, nNc, ri, ro);
+               norm = -coriolis(l + 1, o.m);
+               bMat += -static_cast<MHDFloat>(norm * T * invlapl) * cordr.mat();
+            }
+
+            return bMat;
+         };
+
+         // Create first upper diagonal operator
+         auto& dUp = getDescription();
+         dUp.nRowShift = 0;
+         dUp.nColShift = 1;
+         dUp.realOp = realOpUpper;
+         dUp.imagOp = nullptr;
+      }
+   }
+   else if (rowId == std::make_pair(PhysicalNames::Velocity::id(),
+                        FieldComponents::Spectral::POL))
+   {
+      if (rowId == colId)
+      {
+         // Real part of block
+         auto realOp = [](const int nNr, const int nNc, const int l,
+                          std::shared_ptr<details::BlockOptions> opts,
+                          const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+
+               SparseSM::Chebyshev::LinearMap::I4Y4SphLapl2 diffusion(nNr, nNc,
+                  ri, ro, l);
+               bMat = diffusion.mat();
+            }
+
+            return bMat;
+         };
+
+         // Imaginary part of block
+         auto imagOp = [](const int nNr, const int nNc, const int l,
+                          std::shared_ptr<details::BlockOptions> opts,
+                          const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               auto& o =
+                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(
+                     opts);
+
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+               const auto dl = static_cast<Internal::MHDFloat>(l);
+               const auto invlapl = MHD_MP(1.0) / (dl * (dl + MHD_MP(1.0)));
+               const auto T =
+                  1.0 / nds.find(NonDimensional::Ekman::id())->second->value();
+               SparseSM::Chebyshev::LinearMap::I4Y4SphLapl coriolis(nNr, nNc,
+                  ri, ro, l);
+
+               // Correction is not yet tested
+#if 0
+                       // Correct Laplacian for 4th order system according to:
+                       // McFadden,Murray,Boisvert,
+                       // Elimination of Spurious Eigenvalues in the
+                       // Chebyshev Tau Spectral Method,
+                       // JCP 91, 228-239 (1990)
+                       // We simply drop the last column
+                       if (o.bcId == Bc::Name::NoSlip::id())
+                       {
+                           SparseSM::Chebyshev::LinearMap::Id qid(nNr, nNc, ri, ro, -2);
+                           bMat = static_cast<MHDFloat>(o.m * T * invlapl) *
+                                  coriolis.mat() * qid.mat();
+                       }
+                       else
+                       {
+                           bMat = static_cast<MHDFloat>(o.m * T * invlapl) *
+                                  coriolis.mat();
+                       }
+#else
+               bMat = static_cast<MHDFloat>(o.m * T * invlapl) * coriolis.mat();
+#endif
+            }
+
+            return bMat;
+         };
+
+         // Create diagonal block
+         auto& d = getDescription();
+         d.nRowShift = 0;
+         d.nColShift = 0;
+         d.realOp = realOp;
+         d.imagOp = imagOp;
+      }
+      else if (colId == std::make_pair(PhysicalNames::Velocity::id(),
+                           FieldComponents::Spectral::TOR))
+      {
+         // Create real part of block
+         auto realOpLower = [](const int nNr, const int nNc, const int l,
+                               std::shared_ptr<details::BlockOptions> opts,
+                               const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               auto& o =
+                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(
+                     opts);
+
+               auto coriolis = [](const int l, const int m)
+               {
+                  return (l - MHD_MP(1.0)) * (l + MHD_MP(1.0)) *
+                         Internal::Math::sqrt(
+                            ((l - m) * (l + m)) /
+                            ((MHD_MP(2.0) * l - MHD_MP(1.0)) *
+                               (MHD_MP(2.0) * l + MHD_MP(1.0))));
+               };
+
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+               const auto T =
+                  1.0 / nds.find(NonDimensional::Ekman::id())->second->value();
+
+               const auto dl = static_cast<MHDFloat>(l);
+               const auto invlapl = 1.0 / (dl * (dl + 1.0));
+               SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nNr, nNc, ri, ro);
+               auto norm = (dl - 1.0) * coriolis(l, o.m);
+               bMat = static_cast<MHDFloat>(norm * T * invlapl) * cor_r.mat();
+               SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nNr, nNc, ri, ro);
+               norm = -coriolis(l, o.m);
+               bMat += static_cast<MHDFloat>(norm * T * invlapl) * cordr.mat();
+            }
+
+            return bMat;
+         };
+
+         // Create first lower diagonal operator
+         auto& dLow = getDescription();
+         dLow.nRowShift = 1;
+         dLow.nColShift = 0;
+         dLow.realOp = realOpLower;
+         dLow.imagOp = nullptr;
+
+         // Create real part of block
+         auto realOpUpper = [](const int nNr, const int nNc, const int l,
+                               std::shared_ptr<details::BlockOptions> opts,
+                               const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               auto& o =
+                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(
+                     opts);
+
+               auto coriolis = [](const int l, const int m)
+               {
+                  return (l - MHD_MP(1.0)) * (l + MHD_MP(1.0)) *
+                         Internal::Math::sqrt(
+                            ((l - m) * (l + m)) /
+                            ((MHD_MP(2.0) * l - MHD_MP(1.0)) *
+                               (MHD_MP(2.0) * l + MHD_MP(1.0))));
+               };
+
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+               const auto T =
+                  1.0 / nds.find(NonDimensional::Ekman::id())->second->value();
+
+               const auto dl = static_cast<MHDFloat>(l);
+               const auto invlapl = 1.0 / (dl * (dl + 1.0));
+               SparseSM::Chebyshev::LinearMap::I4Y3 cor_r(nNr, nNc, ri, ro);
+               auto norm = -(dl + 2.0) * coriolis(l + 1, o.m);
+               bMat = static_cast<MHDFloat>(norm * T * invlapl) * cor_r.mat();
+               SparseSM::Chebyshev::LinearMap::I4Y4D1 cordr(nNr, nNc, ri, ro);
+               norm = -coriolis(l + 1, o.m);
+               bMat += static_cast<MHDFloat>(norm * T * invlapl) * cordr.mat();
+            }
+
+            return bMat;
+         };
+
+         // Create first upper diagonal operator
+         auto& dUp = getDescription();
+         dUp.nRowShift = 0;
+         dUp.nColShift = 1;
+         dUp.realOp = realOpUpper;
+         dUp.imagOp = nullptr;
+      }
+      else if (colId == std::make_pair(PhysicalNames::Temperature::id(),
+                           FieldComponents::Spectral::SCALAR))
+      {
+
+         auto realOp = [](const int nNr, const int nNc, const int l,
+                          std::shared_ptr<details::BlockOptions> opts,
+                          const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            if (l > 0)
+            {
+               const auto ri =
+                  nds.find(NonDimensional::Lower1d::id())->second->value();
+               const auto ro =
+                  nds.find(NonDimensional::Upper1d::id())->second->value();
+               const auto Ra = RTC::implDetails::effectiveRa(nds);
+
+               SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nNr, nNc, ri, ro);
+               bMat = -Ra * i4r4.mat();
+            }
+
+            return bMat;
+         };
+
+         // Create diagonal block
+         auto& d = getDescription();
+         d.nRowShift = 0;
+         d.nColShift = 0;
+         d.realOp = realOp;
+         d.imagOp = nullptr;
+      }
+   }
+   else if (rowId == std::make_pair(PhysicalNames::Temperature::id(),
+                        FieldComponents::Spectral::SCALAR))
+   {
+      if (rowId == colId)
+      {
+         // Creat real part of block
+         auto realOp = [](const int nNr, const int nNc, const int l,
+                          std::shared_ptr<details::BlockOptions> opts,
+                          const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            const auto ri =
+               nds.find(NonDimensional::Lower1d::id())->second->value();
+            const auto ro =
+               nds.find(NonDimensional::Upper1d::id())->second->value();
+            const auto heatingMode =
+               nds.find(NonDimensional::Heating::id())->second->value();
+            const auto Pr =
+               nds.find(NonDimensional::Prandtl::id())->second->value();
+
+            if (heatingMode == 0)
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nNr, nNc, ri,
+                  ro, l);
+               bMat = (1.0 / Pr) * spasm.mat();
             }
             else
             {
-               SparseSM::Chebyshev::LinearMap::Id qid(gN, gN, ri, ro);
-               bMat = qid.mat();
+               SparseSM::Chebyshev::LinearMap::I2Y3SphLapl spasm(nNr, nNc, ri,
+                  ro, l);
+               bMat = (1.0 / Pr) * spasm.mat();
             }
-            this->addBlock(decMat.real(), bMat, rowShift, rowShift);
-            rowShift += gN;
-         }
-      }
-      else if(fieldId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
-      {
-         int rowShift = baseShift;
-         for(int l = m; l < nL; l++)
-         {
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-            this->blockInfo(tN, gN, shift, rhs, fieldId, res, l, bcs);
-            SparseMatrix bMat;
-            if(l > 0)
-            {
-               SparseSM::Chebyshev::LinearMap::I4Y4SphLapl spasm(nN, nN, ri, ro, l);
-               bMat = spasm.mat();
-               if(this->useGalerkin())
-               {
-                  this->applyGalerkinStencil(bMat, fieldId, fieldId, l, res, bcs, nds);
-               }
-            }
-            else
-            {
-               SparseSM::Chebyshev::LinearMap::Id qid(gN, gN, ri, ro);
-               bMat = qid.mat();
-            }
-            this->addBlock(decMat.real(), bMat, rowShift, rowShift);
-            rowShift += gN;
-         }
-      }
-      else if(fieldId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR))
-      {
-         auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
 
-         int rowShift = baseShift;
-         for(int l = m; l < nL; l++)
-         {
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-            SparseMatrix bMat;
-            if(heatingMode == 0)
-            {
-               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-               bMat = spasm.mat();
-            }
-            else
-            {
-               SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nN, nN, ri, ro);
-               bMat = spasm.mat();
-            }
-            if(this->useGalerkin())
-            {
-               this->applyGalerkinStencil(bMat, fieldId, fieldId, l, res, bcs, nds);
-            }
-            this->addBlock(decMat.real(), bMat, rowShift, rowShift);
-            this->blockInfo(tN, gN, shift, rhs, fieldId, res, l, bcs);
-            rowShift += gN;
-         }
+            return bMat;
+         };
+
+         // Create diagonal block
+         auto& d = getDescription();
+         d.nRowShift = 0;
+         d.nColShift = 0;
+         d.realOp = realOp;
+         d.imagOp = nullptr;
       }
    }
-
-   void ModelBackend::boundaryBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const SpectralFieldId& colId, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds, const bool isSplit) const
+   else
    {
-      bool needTau = (bcType == ModelOperatorBoundary::SolverHasBc::id());
-
-      assert(eigs.size() == 1);
-      int m = eigs.at(0);
-
-      // Compute system size
-      const auto sysInfo = systemInfo(rowId, colId, m, res, bcs, this->useGalerkin(), false);
-      const auto sysN = sysInfo.systemSize;
-      const auto baseRowShift = sysInfo.startRow;
-      const auto baseColShift = sysInfo.startCol;
-      auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
-
-      if(decMat.real().size() == 0)
-      {
-         decMat.real().resize(sysN,sysN);
-         decMat.imag().resize(sysN,sysN);
-      }
-      assert(decMat.real().rows() == sysN);
-      assert(decMat.real().cols() == sysN);
-      assert(decMat.imag().rows() == sysN);
-      assert(decMat.imag().cols() == sysN);
-
-      int tN, gN, rhs;
-      ArrayI shift(3);
-
-      int rowShift = baseRowShift;
-      int colShift = baseColShift;
-      // Apply boundary condition
-      if(this->useGalerkin())
-      {
-         for(int l = m; l < nL; l++)
-         {
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-            SparseMatrix mat(nN, nN);
-            this->applyGalerkinStencil(mat, rowId, colId, l, res, bcs, nds);
-            this->addBlock(decMat.real(), mat, rowShift, colShift);
-
-            this->blockInfo(tN, gN, shift, rhs, rowId, res, l, bcs);
-            rowShift += gN;
-
-            this->blockInfo(tN, gN, shift, rhs, colId, res, l, bcs);
-            colShift += gN;
-         }
-      }
-      else if(needTau)
-      {
-         int minL = m;
-         if(m == 0 && (rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::TOR) || rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL)))
-         {
-            minL = m + 1;
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, m)(0);
-            rowShift += nN;
-            colShift += nN;
-         }
-         for(int l = minL; l < nL; l++)
-         {
-            auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-            SparseMatrix mat(nN, nN);
-            this->applyTau(mat, rowId, colId, l, res, bcs, nds, isSplit);
-            this->addBlock(decMat.real(), mat, rowShift, colShift);
-
-            rowShift += nN;
-            colShift += nN;
-         }
-      }
+      throw std::logic_error("Equations are not setup properly");
    }
 
-   void ModelBackend::modelMatrix(DecoupledZSparse& rModelMatrix, const std::size_t opId, const Equations::CouplingInformation::FieldId_range imRange, const int matIdx, const std::size_t bcType, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   return descr;
+}
+
+std::vector<details::BlockDescription> ModelBackend::timeBlockBuilder(
+   const SpectralFieldId& rowId, const SpectralFieldId& colId,
+   const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs,
+   const NonDimensional::NdMap& nds) const
+{
+   assert(rowId == colId);
+   auto fieldId = rowId;
+
+   std::vector<details::BlockDescription> descr;
+
+   // Create description with common options
+   auto getDescription = [&]() -> details::BlockDescription&
    {
-      // Time operator
-      if(opId == ModelOperator::Time::id())
-      {
-         for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
-         {
-            this->timeBlock(rModelMatrix, *pRowId, matIdx, bcType, res, eigs, bcs, nds);
-         }
-      }
-      // Linear operator
-      else if(opId == ModelOperator::ImplicitLinear::id() || opId == ModelOperator::SplitImplicitLinear::id())
-      {
-         bool isSplit = (opId == ModelOperator::SplitImplicitLinear::id());
+      descr.push_back({});
+      auto& d = descr.back();
+      auto opts = std::make_shared<implDetails::BlockOptionsImpl>();
+      opts->m = eigs.at(0);
+      opts->bcId = bcs.find(colId.first)->second;
+      opts->truncateQI = this->mcTruncateQI;
+      opts->isSplitOperator = false;
+      d.opts = opts;
 
-         for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
-         {
-            for(auto pColId = imRange.first; pColId != imRange.second; pColId++)
-            {
-               this->implicitBlock(rModelMatrix, *pRowId, *pColId, matIdx, bcType, res, eigs, bcs, nds, isSplit);
-            }
-         }
-      }
-      // Boundary operator
-      else if(opId == ModelOperator::Boundary::id() || opId == ModelOperator::SplitBoundary::id())
-      {
-         bool isSplit = (opId == ModelOperator::SplitBoundary::id());
+      return d;
+   };
 
-         for(auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
-         {
-            for(auto pColId = imRange.first; pColId != imRange.second; pColId++)
-            {
-               this->boundaryBlock(rModelMatrix, *pRowId, *pColId, matIdx, bcType, res, eigs, bcs, nds, isSplit);
-            }
-         }
-      }
-      else
-      {
-         throw std::logic_error("Requested operator type is not implemented");
-      }
-   }
-
-   void ModelBackend::galerkinStencil(SparseMatrix& mat, const SpectralFieldId& fieldId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs, const NonDimensional::NdMap& nds) const
+   if (fieldId == std::make_pair(PhysicalNames::Velocity::id(),
+                     FieldComponents::Spectral::TOR))
    {
-      assert(this->useGalerkin());
-      assert(eigs.size() == 1);
-      int m = eigs.at(0);
-
-      // Compute system size
-      const auto sysRows = systemInfo(fieldId, fieldId, m, res, bcs, makeSquare, false).blockRows;
-      const auto sysCols = systemInfo(fieldId, fieldId, m, res, bcs, true, false).blockCols;
-
-      auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
-
-      if(mat.size() == 0)
+      // Real part of operator
+      auto realOp = [](const int nNr, const int nNc, const int l,
+                       std::shared_ptr<details::BlockOptions> opts,
+                       const NonDimensional::NdMap& nds)
       {
-         mat.resize(sysRows,sysCols);
-      }
-      assert(mat.rows() == sysRows);
-      assert(mat.cols() == sysCols);
+         assert(nNr == nNc);
 
-      assert(eigs.size() == 1);
+         SparseMatrix bMat(nNr, nNc);
 
-      int rowShift = 0;
-      int colShift = 0;
-      for(int l = m; l < nL; l++)
-      {
-         SparseMatrix S;
-         this->stencil(S, fieldId, l, res, makeSquare, bcs, nds);
-         this->addBlock(mat, S, rowShift, colShift);
+         const auto ri =
+            nds.find(NonDimensional::Lower1d::id())->second->value();
+         const auto ro =
+            nds.find(NonDimensional::Upper1d::id())->second->value();
 
-         rowShift += S.rows();
-         colShift += S.cols();
-      }
-   }
-
-   void ModelBackend::explicitBlock(DecoupledZSparse& decMat, const SpectralFieldId& rowId, const std::size_t opId,  const SpectralFieldId colId, const int matIdx, const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs, const NonDimensional::NdMap& nds) const
-   {
-      assert(eigs.size() == 1);
-      int m = eigs.at(0);
-
-      int tN, gN, rhs;
-      ArrayI shift(3);
-      this->blockInfo(tN, gN, shift, rhs, colId, res, m, bcs);
-
-      // Compute system size
-      const auto sysInfo = systemInfo(rowId, colId, m, res, bcs, false, this->useGalerkin());
-      const auto sysRows = sysInfo.blockRows;
-      const auto sysCols = sysInfo.blockCols;
-      const auto baseShift = 0;
-      auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
-
-      auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
-      auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-
-      if(decMat.real().size() == 0)
-      {
-         decMat.real().resize(sysRows,sysCols);
-         decMat.imag().resize(sysRows,sysCols);
-      }
-      assert(decMat.real().rows() == sysRows);
-      assert(decMat.real().cols() == sysCols);
-      assert(decMat.imag().rows() == sysRows);
-      assert(decMat.imag().cols() == sysCols);
-
-      // Explicit linear operator
-      if(opId == ModelOperator::ExplicitLinear::id())
-      {
-         if(rowId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL) &&
-               colId == std::make_pair(PhysicalNames::Temperature::id(),FieldComponents::Spectral::SCALAR))
+         if (l > 0)
          {
-            auto Ra = effectiveRa(nds);
-
-            int rowShift = baseShift;
-            int colShift = baseShift;
-            for(int l = m; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nN, nN, ri, ro);
-               SparseMatrix bMat = Ra*spasm.mat();
-               if(this->useGalerkin())
-               {
-                  this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-                  SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
-                  bMat = qId.mat()*bMat;
-               }
-               this->addBlock(decMat.real(), bMat, rowShift, colShift);
-               //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, Ra);
-
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, eigs.at(0), bcs);
-               colShift += tN;
-            }
-         }
-         else if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) &&
-               colId == std::make_pair(PhysicalNames::Velocity::id(),FieldComponents::Spectral::POL))
-         {
-            auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
-            auto bg = effectiveBg(nds);
-
-            int rowShift = baseShift;
-            int colShift = baseShift;
-            for(int l = m; l < nL; l++)
-            {
-               auto dl = static_cast<MHDFloat>(l);
-               auto ll1 = dl*(dl + 1.0);
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               SparseMatrix bMat;
-               if(heatingMode == 0)
-               {
-                  SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-                  bMat = -bg*ll1*spasm.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
-                     bMat = qId.mat()*bMat;
-                  }
-                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, -bg*ll1);
-               }
-               else
-               {
-                  SparseSM::Chebyshev::LinearMap::I2 spasm(nN, nN, ri, ro);
-                  bMat = -bg*ll1*spasm.mat();
-                  if(this->useGalerkin())
-                  {
-                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
-                     bMat = qId.mat()*bMat;
-                  }
-                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, -bg*ll1);
-               }
-               this->addBlock(decMat.real(), bMat, rowShift, colShift);
-
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, eigs.at(0), bcs);
-               colShift += tN;
-            }
+            SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+            bMat = spasm.mat();
          }
          else
          {
-            // Nothing to be done
-            throw std::logic_error("There are no explicit linear operators");
+            SparseSM::Chebyshev::LinearMap::Id qid(nNr, nNc, ri, ro);
+            bMat = qid.mat();
          }
-      }
-      // Explicit nonlinear operator
-      else if(opId == ModelOperator::ExplicitNonlinear::id())
+
+         return bMat;
+      };
+
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = realOp;
+      d.imagOp = nullptr;
+   }
+   else if (fieldId == std::make_pair(PhysicalNames::Velocity::id(),
+                          FieldComponents::Spectral::POL))
+   {
+      // Real part of operator
+      auto realOp = [](const int nNr, const int nNc, const int l,
+                       std::shared_ptr<details::BlockOptions> opts,
+                       const NonDimensional::NdMap& nds)
       {
-         if(rowId == std::make_pair(PhysicalNames::Temperature::id(), FieldComponents::Spectral::SCALAR) && rowId == colId)
+         assert(nNr == nNc);
+
+         SparseMatrix bMat(nNr, nNc);
+
+         const auto ri =
+            nds.find(NonDimensional::Lower1d::id())->second->value();
+         const auto ro =
+            nds.find(NonDimensional::Upper1d::id())->second->value();
+
+         if (l > 0)
          {
-            auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
+            SparseSM::Chebyshev::LinearMap::I4Y4SphLapl spasm(nNr, nNc, ri, ro,
+               l);
 
-            int rowShift = baseShift;
-            int colShift = baseShift;
-            for(int l = m; l < nL; l++)
-            {
-               auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, l)(0);
-               SparseMatrix bMat;
-               if(heatingMode == 0)
-               {
-                  SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
-                  bMat = spasm.mat();
-                  if(this->useGalerkin())
+            // Correctdion is not yet tested
+#if 0
+                  // Correct Laplacian for 4th order system according to:
+                  // McFadden,Murray,Boisvert,
+                  // Elimination of Spurious Eigenvalues in the
+                  // Chebyshev Tau Spectral Method,
+                  // JCP 91, 228-239 (1990)
+                  // We simply drop the last column
+                  if (o.bcId == Bc::Name::NoSlip::id())
                   {
-                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
-                     bMat = qId.mat()*bMat;
+                     SparseSM::Chebyshev::LinearMap::Id qid(nNr, nNc, ri, ro, -2);
+                     bMat = spasm.mat() * qid.mat();
                   }
-                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift);
-               }
-               else
-               {
-                  SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nN, nN, ri, ro);
-                  bMat = spasm.mat();
-                  if(this->useGalerkin())
+                  else
                   {
-                     this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-                     SparseSM::Chebyshev::LinearMap::Id qId(nN-shift(0), nN, ri, ro, 0, shift(0));
-                     bMat = qId.mat()*bMat;
+                     bMat = spasm.mat();
                   }
-                  //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift);
-               }
-               this->addBlock(decMat.real(), bMat, rowShift, colShift);
-
-               this->blockInfo(tN, gN, shift, rhs, rowId, res, eigs.at(0), bcs);
-               rowShift += gN;
-
-               this->blockInfo(tN, gN, shift, rhs, colId, res, eigs.at(0), bcs);
-               colShift += tN;
-            }
+#else
+            bMat = spasm.mat();
+#endif
          }
          else
          {
-            throw std::logic_error("There are no explicit nonlinear operators");
+            SparseSM::Chebyshev::LinearMap::Id qid(nNr, nNc, ri, ro);
+            bMat = qid.mat();
          }
-      }
-      // Explicit nextstep operator
-      else if(opId == ModelOperator::ExplicitNextstep::id())
-      {
-         throw std::logic_error("There are no explicit nextstep operators");
-      }
+
+         return bMat;
+      };
+
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = realOp;
+      d.imagOp = nullptr;
    }
-
-   void ModelBackend::addBlock(SparseMatrix& mat, const SparseMatrix& block, const int rowShift, const int colShift, const MHDFloat coeff) const
+   else if (fieldId == std::make_pair(PhysicalNames::Temperature::id(),
+                          FieldComponents::Spectral::SCALAR))
    {
-      std::vector<Eigen::Triplet<MHDFloat> > triplets;
-      triplets.reserve(block.nonZeros());
-      for(int k = 0; k < block.outerSize(); ++k)
+      // Real part of operator
+      auto realOp = [](const int nNr, const int nNc, const int l,
+                       std::shared_ptr<details::BlockOptions> opts,
+                       const NonDimensional::NdMap& nds)
       {
-         for(SparseMatrix::InnerIterator it(block, k); it; ++it)
-         {
-            triplets.emplace_back(Eigen::Triplet<MHDFloat>(it.row() + rowShift, it.col() + colShift, coeff*it.value()));
-         }
-      }
-      SparseMatrix full(mat.rows(), mat.cols());
-      full.setFromTriplets(triplets.begin(), triplets.end());
-      mat += full;
-   }
+         const auto ri =
+            nds.find(NonDimensional::Lower1d::id())->second->value();
+         const auto ro =
+            nds.find(NonDimensional::Upper1d::id())->second->value();
+         const auto heatingMode =
+            nds.find(NonDimensional::Heating::id())->second->value();
 
-   int ModelBackend::blockSize(const SpectralFieldId& fId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin) const
-   {
-      auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
-
-      // Compute size
-      auto s = 0;
-      for(int l = m; l < nL; l++)
-      {
-         int tN, gN, rhs;
-         ArrayI shift(3);
-         this->blockInfo(tN, gN, shift, rhs, fId, res, l, bcs);
-         if(isGalerkin)
+         SparseMatrix bMat(nNr, nNc);
+         if (heatingMode == 0)
          {
-            s += gN;
+            SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+            bMat = spasm.mat();
          }
          else
          {
-            s += tN;
+            SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nNr, nNc, ri, ro);
+            bMat = spasm.mat();
          }
-      }
 
-      return s;
+         return bMat;
+      };
+
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = realOp;
+      d.imagOp = nullptr;
    }
 
-   std::pair<int, int> ModelBackend::blockShape(const SpectralFieldId& rowId, const SpectralFieldId& colId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin, const bool dropRows) const
+   return descr;
+}
+
+void ModelBackend::modelMatrix(DecoupledZSparse& rModelMatrix,
+   const std::size_t opId,
+   const Equations::CouplingInformation::FieldId_range imRange,
+   const int matIdx, const std::size_t bcType, const Resolution& res,
+   const std::vector<MHDFloat>& eigs, const BcMap& bcs,
+   const NonDimensional::NdMap& nds) const
+{
+   assert(eigs.size() == 1);
+   int m = eigs.at(0);
+   auto maxL = res.counter().dim(Dimensions::Simulation::SIM2D,
+                  Dimensions::Space::SPECTRAL, m) -
+               1;
+
+   // Time operator
+   if (opId == ModelOperator::Time::id())
    {
-      // Compute number of rows
-      auto rows = this->blockSize(rowId, m, res, bcs, isGalerkin || dropRows);
-
-      // Compute number of cols
-      int cols = this->blockSize(colId, m, res, bcs, isGalerkin);
-
-      return std::make_pair(rows, cols);
-   }
-
-   internal::SystemInfo ModelBackend::systemInfo(const SpectralFieldId& rowId, const SpectralFieldId& colId, const int m, const Resolution& res, const BcMap& bcs, const bool isGalerkin, const bool dropRows) const
-   {
-      auto shape = this->blockShape(rowId, colId, m, res, bcs, isGalerkin, dropRows);
-
-      int sysN = 0;
-      bool rowCount = true;
-      bool colCount = true;
-      int rowIdx = 0;
-      int colIdx = 0;
-      const auto& fields = this->implicitFields(rowId);
-      for(auto it = fields.begin(); it != fields.end(); ++it)
+      for (auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
       {
-         int s = this->blockSize(*it, m, res, bcs, isGalerkin);
-         sysN += s;
+         auto rowId = *pRowId;
+         auto colId = rowId;
+         const auto& fields = this->implicitFields(rowId);
+         auto descr = timeBlockBuilder(rowId, colId, res, eigs, bcs, nds);
+         buildBlock(rModelMatrix, descr, rowId, colId, fields, matIdx, bcType,
+            res, m, maxL, bcs, nds, false);
+      }
+   }
+   // Linear operator
+   else if (opId == ModelOperator::ImplicitLinear::id() ||
+            opId == ModelOperator::SplitImplicitLinear::id())
+   {
+      bool isSplit = (opId == ModelOperator::SplitImplicitLinear::id());
 
-         // Get block index of rowId
-         if(rowCount && rowId != *it)
+      for (auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
+      {
+         auto rowId = *pRowId;
+         const auto& fields = this->implicitFields(rowId);
+         for (auto pColId = imRange.first; pColId != imRange.second; pColId++)
          {
-            rowIdx += s;
-         }
-         else if(rowId == *it)
-         {
-            rowCount = false;
-         }
-
-         // Get block index of colId
-         if(colCount && colId != *it)
-         {
-            colIdx += s;
-         }
-         else if(colId == *it)
-         {
-            colCount = false;
+            auto colId = *pColId;
+            auto descr =
+               implicitBlockBuilder(rowId, colId, res, eigs, bcs, nds, isSplit);
+            buildBlock(rModelMatrix, descr, rowId, colId, fields, matIdx,
+               bcType, res, m, maxL, bcs, nds, isSplit);
          }
       }
+   }
+   // Boundary operator
+   else if (opId == ModelOperator::Boundary::id() ||
+            opId == ModelOperator::SplitBoundary::id())
+   {
+      bool isSplit = (opId == ModelOperator::SplitBoundary::id());
 
-      internal::SystemInfo info(sysN, shape.first, shape.second, rowIdx, colIdx);
-      return info;
+      for (auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
+      {
+         auto rowId = *pRowId;
+         const auto& fields = this->implicitFields(rowId);
+         for (auto pColId = imRange.first; pColId != imRange.second; pColId++)
+         {
+            auto colId = *pColId;
+            auto descr =
+               boundaryBlockBuilder(rowId, colId, res, eigs, bcs, nds, isSplit);
+            buildBlock(rModelMatrix, descr, rowId, colId, fields, matIdx,
+               bcType, res, m, maxL, bcs, nds, isSplit);
+         }
+      }
+   }
+   else
+   {
+      throw std::logic_error("Requested operator type is not implemented");
+   }
+}
+
+std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
+   const SpectralFieldId& rowId, const SpectralFieldId& colId,
+   const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs,
+   const NonDimensional::NdMap& nds, const bool isSplit) const
+{
+   std::vector<details::BlockDescription> descr;
+
+   // Create description with common options
+   auto getDescription = [&]() -> details::BlockDescription&
+   {
+      descr.push_back({});
+      auto& d = descr.back();
+      auto opts = std::make_shared<implDetails::BlockOptionsImpl>();
+      opts->m = eigs.at(0);
+      opts->bcId = bcs.find(colId.first)->second;
+      opts->truncateQI = this->mcTruncateQI;
+      opts->isSplitOperator = isSplit;
+      d.opts = opts;
+
+      return d;
+   };
+
+   if (rowId == colId)
+   {
+      // Real part of operator
+      auto realOp = [](const int nNr, const int nNc, const int l,
+                       std::shared_ptr<details::BlockOptions> opts,
+                       const NonDimensional::NdMap& nds)
+      {
+         SparseMatrix bMat(nNr, nNc);
+
+         return bMat;
+      };
+
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = realOp;
+      d.imagOp = nullptr;
+   }
+   else
+   {
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = nullptr;
+      d.imagOp = nullptr;
    }
 
+   return descr;
+}
 
-} // Implicit
-} // RTC
-} // Shell
-} // Boussinesq
-} // Model
-} // QuICC
+void ModelBackend::galerkinStencil(SparseMatrix& mat,
+   const SpectralFieldId& fieldId, const int matIdx, const Resolution& res,
+   const std::vector<MHDFloat>& eigs, const bool makeSquare, const BcMap& bcs,
+   const NonDimensional::NdMap& nds) const
+{
+   assert(this->useGalerkin());
+   assert(eigs.size() == 1);
+   int m = eigs.at(0);
+   auto maxL = res.counter().dim(Dimensions::Simulation::SIM2D,
+                  Dimensions::Space::SPECTRAL, m) -
+               1;
+
+   // Compute system size
+   const auto& fields = this->implicitFields(fieldId);
+   const auto sysRows =
+      systemInfo(fieldId, fieldId, fields, m, maxL, res, bcs, makeSquare, false)
+         .blockRows;
+   const auto sysCols =
+      systemInfo(fieldId, fieldId, fields, m, maxL, res, bcs, true, false)
+         .blockCols;
+
+   auto nL = res.counter().dim(Dimensions::Simulation::SIM2D,
+      Dimensions::Space::SPECTRAL, m);
+
+   if (mat.size() == 0)
+   {
+      mat.resize(sysRows, sysCols);
+   }
+   assert(mat.rows() == sysRows);
+   assert(mat.cols() == sysCols);
+
+   assert(eigs.size() == 1);
+
+   int rowShift = 0;
+   int colShift = 0;
+   for (int l = m; l < nL; l++)
+   {
+      SparseMatrix S;
+      this->stencil(S, fieldId, l, res, makeSquare, bcs, nds);
+      this->addBlock(mat, S, rowShift, colShift);
+
+      rowShift += S.rows();
+      colShift += S.cols();
+   }
+}
+
+void ModelBackend::explicitBlock(DecoupledZSparse& decMat,
+   const SpectralFieldId& rowId, const std::size_t opId,
+   const SpectralFieldId colId, const int matIdx, const Resolution& res,
+   const std::vector<MHDFloat>& eigs, const BcMap& bcs,
+   const NonDimensional::NdMap& nds) const
+{
+   assert(eigs.size() == 1);
+   int m = eigs.at(0);
+   auto maxL = res.counter().dim(Dimensions::Simulation::SIM2D,
+                  Dimensions::Space::SPECTRAL, m) -
+               1;
+
+   auto bcType = ModelOperatorBoundary::SolverNoTau::id();
+
+   // Explicit linear operator
+   if (opId == ModelOperator::ExplicitLinear::id())
+   {
+      const auto& fields = this->explicitLinearFields(rowId);
+      auto descr =
+         explicitLinearBlockBuilder(rowId, colId, res, eigs, bcs, nds);
+      buildBlock(decMat, descr, rowId, colId, fields, matIdx, bcType, res, m,
+         maxL, bcs, nds, false, true);
+   }
+   // Explicit nonlinear operator
+   else if (opId == ModelOperator::ExplicitNonlinear::id())
+   {
+      const auto& fields = this->explicitNonlinearFields(rowId);
+      auto descr =
+         explicitNonlinearBlockBuilder(rowId, colId, res, eigs, bcs, nds);
+      buildBlock(decMat, descr, rowId, colId, fields, matIdx, bcType, res, m,
+         maxL, bcs, nds, false, true);
+   }
+   // Explicit nextstep operator
+   else if (opId == ModelOperator::ExplicitNextstep::id())
+   {
+      throw std::logic_error("There are no explicit nextstep operators");
+   }
+}
+
+std::vector<details::BlockDescription> ModelBackend::explicitLinearBlockBuilder(
+   const SpectralFieldId& rowId, const SpectralFieldId& colId,
+   const Resolution& res, const std::vector<MHDFloat>& eigs, const BcMap& bcs,
+   const NonDimensional::NdMap& nds) const
+{
+   assert(eigs.size() == 1);
+
+   std::vector<details::BlockDescription> descr;
+
+   // Create description with common options
+   auto getDescription = [&]() -> details::BlockDescription&
+   {
+      descr.push_back({});
+      auto& d = descr.back();
+      auto opts = std::make_shared<implDetails::BlockOptionsImpl>();
+      opts->m = eigs.at(0);
+      opts->bcId = bcs.find(colId.first)->second;
+      opts->truncateQI = this->mcTruncateQI;
+      opts->isSplitOperator = false;
+      d.opts = opts;
+
+      return d;
+   };
+
+   if (rowId == std::make_pair(PhysicalNames::Velocity::id(),
+                   FieldComponents::Spectral::POL) &&
+       colId == std::make_pair(PhysicalNames::Temperature::id(),
+                   FieldComponents::Spectral::SCALAR))
+   {
+      // Real part of operator
+      auto realOp = [](const int nNr, const int nNc, const int l,
+                       std::shared_ptr<details::BlockOptions> opts,
+                       const NonDimensional::NdMap& nds)
+      {
+         SparseMatrix bMat(nNr, nNc);
+
+         const auto ri =
+            nds.find(NonDimensional::Lower1d::id())->second->value();
+         const auto ro =
+            nds.find(NonDimensional::Upper1d::id())->second->value();
+         const auto Ra = RTC::implDetails::effectiveRa(nds);
+
+         SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nNr, nNc, ri, ro);
+         bMat = Ra * spasm.mat();
+
+         return bMat;
+      };
+
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = realOp;
+      d.imagOp = nullptr;
+   }
+   else if (rowId == std::make_pair(PhysicalNames::Temperature::id(),
+                        FieldComponents::Spectral::SCALAR) &&
+            colId == std::make_pair(PhysicalNames::Velocity::id(),
+                        FieldComponents::Spectral::POL))
+   {
+      // Real part of operator
+      auto realOp = [](const int nNr, const int nNc, const int l,
+                       std::shared_ptr<details::BlockOptions> opts,
+                       const NonDimensional::NdMap& nds)
+      {
+         SparseMatrix bMat(nNr, nNc);
+
+         const auto ri =
+            nds.find(NonDimensional::Lower1d::id())->second->value();
+         const auto ro =
+            nds.find(NonDimensional::Upper1d::id())->second->value();
+         const auto heatingMode =
+            nds.find(NonDimensional::Heating::id())->second->value();
+         const auto bg = RTC::implDetails::effectiveBg(nds);
+         const auto dl = static_cast<MHDFloat>(l);
+         const auto ll1 = dl * (dl + 1.0);
+
+         if (heatingMode == 0)
+         {
+            SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+            bMat = -bg * ll1 * spasm.mat();
+         }
+         else
+         {
+            SparseSM::Chebyshev::LinearMap::I2 spasm(nNr, nNc, ri, ro);
+            bMat = -bg * ll1 * spasm.mat();
+         }
+
+         return bMat;
+      };
+
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = realOp;
+      d.imagOp = nullptr;
+   }
+   else
+   {
+      // Nothing to be done
+      throw std::logic_error("There are no explicit linear operators");
+   }
+
+   return descr;
+}
+
+std::vector<details::BlockDescription>
+ModelBackend::explicitNonlinearBlockBuilder(const SpectralFieldId& rowId,
+   const SpectralFieldId& colId, const Resolution& res,
+   const std::vector<MHDFloat>& eigs, const BcMap& bcs,
+   const NonDimensional::NdMap& nds) const
+{
+   assert(eigs.size() == 1);
+
+   std::vector<details::BlockDescription> descr;
+
+   // Create description with common options
+   auto getDescription = [&]() -> details::BlockDescription&
+   {
+      descr.push_back({});
+      auto& d = descr.back();
+      auto opts = std::make_shared<implDetails::BlockOptionsImpl>();
+      opts->m = eigs.at(0);
+      opts->bcId = bcs.find(colId.first)->second;
+      opts->truncateQI = this->mcTruncateQI;
+      opts->isSplitOperator = false;
+      d.opts = opts;
+
+      return d;
+   };
+
+   if (rowId == std::make_pair(PhysicalNames::Temperature::id(),
+                   FieldComponents::Spectral::SCALAR) &&
+       rowId == colId)
+   {
+      // Real part of operator
+      auto realOp = [](const int nNr, const int nNc, const int l,
+                       std::shared_ptr<details::BlockOptions> opts,
+                       const NonDimensional::NdMap& nds)
+      {
+         SparseMatrix bMat(nNr, nNc);
+
+         const auto ri =
+            nds.find(NonDimensional::Lower1d::id())->second->value();
+         const auto ro =
+            nds.find(NonDimensional::Upper1d::id())->second->value();
+         const auto heatingMode =
+            nds.find(NonDimensional::Heating::id())->second->value();
+
+         if (heatingMode == 0)
+         {
+            SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+            bMat = spasm.mat();
+         }
+         else
+         {
+            SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nNr, nNc, ri, ro);
+            bMat = spasm.mat();
+         }
+
+         return bMat;
+      };
+
+      // Create block diagonal operator
+      auto& d = getDescription();
+      d.nRowShift = 0;
+      d.nColShift = 0;
+      d.realOp = realOp;
+      d.imagOp = nullptr;
+   }
+   else
+   {
+      throw std::logic_error("There are no explicit nonlinear operators");
+   }
+
+   return descr;
+}
+
+} // namespace Implicit
+} // namespace RTC
+} // namespace Shell
+} // namespace Boussinesq
+} // namespace Model
+} // namespace QuICC

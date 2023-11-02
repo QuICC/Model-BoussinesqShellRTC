@@ -288,7 +288,7 @@ namespace RTC {
          }
          else if(bcId == Bc::Name::StressFree::id())
          {
-            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN-s, ri, ro);
+            SparseSM::Chebyshev::LinearMap::Stencil::ValueD2 bc(nN, nN - s, ri, ro);
             mat = bc.mat();
          }
          else
@@ -316,7 +316,7 @@ namespace RTC {
 
       if(makeSquare)
       {
-         SparseSM::Chebyshev::LinearMap::Id qId(nN-s, nN, ri, ro);
+         SparseSM::Chebyshev::LinearMap::Id qId(nN - s, nN, ri, ro);
          mat = qId.mat()*mat;
       }
    }

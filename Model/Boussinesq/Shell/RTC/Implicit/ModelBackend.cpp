@@ -270,9 +270,6 @@ struct BlockOptionsImpl : public details::BlockOptions
 
                    if (l > 0)
                    {
-                       auto& o = *std::dynamic_pointer_cast<
-                          implDetails::BlockOptionsImpl>(opts);
-
                        const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
                        const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
                        SparseSM::Chebyshev::LinearMap::I2Y2SphLapl i2r2lapl(nNr, nNc, ri, ro, l);
@@ -432,8 +429,6 @@ struct BlockOptionsImpl : public details::BlockOptions
 
                    if (l > 0)
                    {
-                       auto& o = *std::dynamic_pointer_cast<
-                          implDetails::BlockOptionsImpl>(opts);
                        const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
                        const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
 
@@ -610,14 +605,8 @@ struct BlockOptionsImpl : public details::BlockOptions
 
                    if (l > 0)
                    {
-                       auto& o = *std::dynamic_pointer_cast<
-                          implDetails::BlockOptionsImpl>(opts);
-
                        const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
                        const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
-                       const auto T =
-                          1.0 /
-                          nds.find(NonDimensional::Ekman::id())->second->value();
                        const auto Ra = RTC::implDetails::effectiveRa(nds);
 
                        SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nNr, nNc, ri, ro);
@@ -646,9 +635,6 @@ struct BlockOptionsImpl : public details::BlockOptions
                                 const NonDimensional::NdMap& nds)
                {
                   SparseMatrix bMat(nNr, nNc);
-                   auto& o =
-                      *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(
-                         opts);
 
                    const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
                    const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
@@ -722,8 +708,6 @@ struct BlockOptionsImpl : public details::BlockOptions
                assert(nNr == nNc);
 
                SparseMatrix bMat(nNr, nNc);
-               auto& o =
-                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(opts);
 
                const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
                const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
@@ -760,8 +744,6 @@ struct BlockOptionsImpl : public details::BlockOptions
                assert(nNr == nNc);
 
                SparseMatrix bMat(nNr, nNc);
-               auto& o =
-                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(opts);
 
                const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
                const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
@@ -815,9 +797,6 @@ struct BlockOptionsImpl : public details::BlockOptions
                             std::shared_ptr<details::BlockOptions> opts,
                             const NonDimensional::NdMap& nds)
            {
-               auto& o =
-                  *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(opts);
-
                const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
                const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
                const auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
@@ -863,8 +842,9 @@ struct BlockOptionsImpl : public details::BlockOptions
          {
             auto rowId = *pRowId;
             auto colId = rowId;
+            const auto& fields = this->implicitFields(rowId);
             auto descr = timeBlockBuilder(rowId, colId, res, eigs, bcs, nds);
-            buildBlock(rModelMatrix, descr, rowId, colId, matIdx, bcType, res,
+            buildBlock(rModelMatrix, descr, rowId, colId, fields, matIdx, bcType, res,
                   m, maxL, bcs, nds, false);
          }
       }
@@ -875,14 +855,15 @@ struct BlockOptionsImpl : public details::BlockOptions
 
          for (auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
          {
+            auto rowId = *pRowId;
+            const auto& fields = this->implicitFields(rowId);
             for (auto pColId = imRange.first; pColId != imRange.second;
                   pColId++)
             {
-               auto rowId = *pRowId;
                auto colId = *pColId;
                auto descr = implicitBlockBuilder(rowId, colId, res, eigs, bcs,
                      nds, isSplit);
-               buildBlock(rModelMatrix, descr, rowId, colId, matIdx, bcType,
+               buildBlock(rModelMatrix, descr, rowId, colId, fields, matIdx, bcType,
                      res, m, maxL, bcs, nds, isSplit);
             }
          }
@@ -894,14 +875,15 @@ struct BlockOptionsImpl : public details::BlockOptions
 
          for (auto pRowId = imRange.first; pRowId != imRange.second; pRowId++)
          {
+            auto rowId = *pRowId;
+            const auto& fields = this->implicitFields(rowId);
             for (auto pColId = imRange.first; pColId != imRange.second;
                   pColId++)
             {
-               auto rowId = *pRowId;
                auto colId = *pColId;
                auto descr = boundaryBlockBuilder(rowId, colId, res, eigs, bcs,
                      nds, isSplit);
-               buildBlock(rModelMatrix, descr, rowId, colId, matIdx, bcType,
+               buildBlock(rModelMatrix, descr, rowId, colId, fields, matIdx, bcType,
                      res, m, maxL, bcs, nds, isSplit);
             }
          }
@@ -976,8 +958,9 @@ std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
                    1;
 
       // Compute system size
-      const auto sysRows = systemInfo(fieldId, fieldId, m, maxL, res, bcs, makeSquare, false).blockRows;
-      const auto sysCols = systemInfo(fieldId, fieldId, m, maxL, res, bcs, true, false).blockCols;
+      const auto& fields = this->implicitFields(fieldId);
+      const auto sysRows = systemInfo(fieldId, fieldId, fields, m, maxL, res, bcs, makeSquare, false).blockRows;
+      const auto sysCols = systemInfo(fieldId, fieldId, fields, m, maxL, res, bcs, true, false).blockCols;
 
       auto nL = res.counter().dim(Dimensions::Simulation::SIM2D, Dimensions::Space::SPECTRAL, m);
 
@@ -1016,15 +999,17 @@ std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
       // Explicit linear operator
       if(opId == ModelOperator::ExplicitLinear::id())
       {
+         const auto& fields = this->explicitLinearFields(rowId);
          auto descr = explicitLinearBlockBuilder(rowId, colId, res, eigs, bcs, nds);
-         buildBlock(decMat, descr, rowId, colId, matIdx, bcType, res,
+         buildBlock(decMat, descr, rowId, colId, fields, matIdx, bcType, res,
                m, maxL, bcs, nds, false, true);
       }
       // Explicit nonlinear operator
       else if(opId == ModelOperator::ExplicitNonlinear::id())
       {
+         const auto& fields = this->explicitNonlinearFields(rowId);
          auto descr = explicitNonlinearBlockBuilder(rowId, colId, res, eigs, bcs, nds);
-         buildBlock(decMat, descr, rowId, colId, matIdx, bcType, res,
+         buildBlock(decMat, descr, rowId, colId, fields, matIdx, bcType, res,
                m, maxL, bcs, nds, false, true);
       }
       // Explicit nextstep operator
@@ -1065,9 +1050,6 @@ std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
          {
             SparseMatrix bMat(nNr, nNc);
 
-            auto& o =
-               *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(opts);
-
             const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
             const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
             const auto Ra = RTC::implDetails::effectiveRa(nds);
@@ -1094,13 +1076,10 @@ std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
                const NonDimensional::NdMap& nds)
          {
             SparseMatrix bMat(nNr, nNc);
-            auto& o =
-               *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(opts);
 
             const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
             const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
             const auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
-            const auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
             const auto bg = RTC::implDetails::effectiveBg(nds);
             const auto dl = static_cast<MHDFloat>(l);
             const auto ll1 = dl*(dl + 1.0);
@@ -1164,8 +1143,6 @@ std::vector<details::BlockDescription> ModelBackend::boundaryBlockBuilder(
                const NonDimensional::NdMap& nds)
          {
             SparseMatrix bMat(nNr, nNc);
-            auto& o =
-               *std::dynamic_pointer_cast<implDetails::BlockOptionsImpl>(opts);
 
             const auto ri = nds.find(NonDimensional::Lower1d::id())->second->value();
             const auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();

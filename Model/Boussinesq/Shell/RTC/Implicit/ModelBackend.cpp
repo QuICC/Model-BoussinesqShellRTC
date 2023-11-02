@@ -705,7 +705,7 @@ std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
    }
    else
    {
-      // throw std::logic_error("Equations are not setup properly");
+      throw std::logic_error("Equations are not setup properly");
    }
 
    return descr;

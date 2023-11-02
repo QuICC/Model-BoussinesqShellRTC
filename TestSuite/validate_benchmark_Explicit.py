@@ -9,6 +9,7 @@ results = []
 # Tolerance per max rows
 rows = list(range(0, 101, 10))
 tols = [31, 32, 60, 63, 63, 63, 63, 125, 125, 125, 125]
+tols = [0]*len(tols) # reset tolerances
 
 prefixes = ['temperature', 'kinetic']
 spectra = ['l', 'm']

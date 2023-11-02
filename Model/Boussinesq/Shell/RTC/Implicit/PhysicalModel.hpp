@@ -1,6 +1,7 @@
 /**
  * @file PhysicalModel.hpp
- * @brief Implementation of the Boussinesq rotating thermal convection in a spherical shell (Toroidal/Poloidal formulation)
+ * @brief Implementation of the Boussinesq rotating thermal convection in a
+ * spherical shell (Toroidal/Poloidal formulation)
  */
 
 #ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IMPLICIT_PHYSICALMODEL_HPP
@@ -27,43 +28,43 @@ namespace RTC {
 
 namespace Implicit {
 
+/**
+ * @brief Implementation of the Boussinesq rotating thermal convection spherical
+ * shell model (Toroidal/Poloidal formulation)
+ */
+class PhysicalModel : public IRTCModel
+{
+public:
+   /// Typedef for the spatial scheme used
+   typedef SpatialScheme::SLFm SchemeType;
+
    /**
-    * @brief Implementation of the Boussinesq rotating thermal convection spherical shell model (Toroidal/Poloidal formulation)
+    * @brief Constructor
     */
-   class PhysicalModel: public IRTCModel
-   {
-      public:
-         /// Typedef for the spatial scheme used
-         typedef SpatialScheme::SLFm SchemeType;
+   PhysicalModel() = default;
 
-         /**
-          * @brief Constructor
-          */
-         PhysicalModel() = default;
+   /**
+    * @brief Destructor
+    */
+   virtual ~PhysicalModel() = default;
 
-         /**
-          * @brief Destructor
-          */
-         virtual ~PhysicalModel() = default;
+   /// Python script/module name
+   virtual std::string PYMODULE() final;
 
-         /// Python script/module name
-         virtual std::string PYMODULE() final;
+   /**
+    * @brief Initialize specialized backend
+    */
+   void init() final;
 
-         /**
-          * @brief Initialize specialized backend
-          */
-         void init() final;
+protected:
+private:
+};
 
-      protected:
-
-      private:
-   };
-
-} // Implicit
-} // RTC
-} // Shell
-} // Boussinesq
-} // MOdel
-} // QuICC
+} // namespace Implicit
+} // namespace RTC
+} // namespace Shell
+} // namespace Boussinesq
+} // namespace Model
+} // namespace QuICC
 
 #endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IMPLICIT_PHYSICALMODEL_HPP

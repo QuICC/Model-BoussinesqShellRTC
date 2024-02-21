@@ -19,7 +19,7 @@ $$
 
 where $\nu$, $\kappa$, $\alpha$ are the kinematic viscosity, thermal conductivity, and thermal expansion coefficents; $\Omega$ is the rotation rate; $r_o$ is the outer radius of the spherical shell and $d$ is its thickness; $g_o$ is defined via the gravitational acceleration, ${\bf g} = -g_o {\bf r}/r_o$. $\mathcal{T}$ is a characteristic temperature and $\mathcal{Q}$ is the effective temperature background. The spherical shell has an inner radius of $r_i$, outeer radius $r_o$ and thickness $d=r_o-r_i$.
 
-The model equations are non-dimensionalised using $d$ as the characteristic length-scale and the viscous time-scale $\nu/d^2$. Note that in the model equation, the factor $d/r_o$ as written in the buoyancy term, involves dimensional quantities. Using the non-dimensional outer radius $r^*_o=r_o/d$, that factor is simply $1/r^*_o$.
+The model equations are non-dimensionalised using $d$ as the characteristic length-scale and the viscous time-scale $\nu/d^2$. Note that in the model equation, the factor $d/r_o$ as written in the buoyancy term, involves dimensional quantities. Using the non-dimensional outer radius ${r^*}_o=r_o/d$, that factor is simply $1/{r^*}_o$.
 
 The definition of both $\mathcal{T}$ and $\mathcal{Q}$ depend on the mode of thermal driving (differential or internal heating, controlled by the parameter `heating`) and on the boundary conditions (fixed-temperature or fixed-flux):
 

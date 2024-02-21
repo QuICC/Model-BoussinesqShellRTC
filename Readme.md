@@ -25,12 +25,12 @@ The definition of both $\mathcal{T}$ and $\mathcal{H}$ depend on the mode of the
 
 - For fixed temperature boundary conditions, the background temperature is as given in Eq. 1.6 of Dormy et al., 2004 (DOI: 10.1017/S0022112003007316). Then $\mathcal{T} = \Delta T = T_i - T_o$ (where $T$ is the temperature of the resulting reference state) and:
     + $\mathcal{H}=$`bg_eff` for uniform internal heating (`heating=0`)
-    + $\mathcal{H}=$`bg_eff`$/r^3$ for differential heating (`heating=1`)
+    + $\mathcal{H}=$ `bg_eff` $/r^3$ for differential heating (`heating=1`)  
 where `bg_eff` is a pre-factor, function of $r_o$ and $d$.
 
 - **The fixed-flux case is not currently implemented cleanly**. For fixed-flux at either one of the boundaries, the relevant thermal scale is defined by a thermal gradient $\beta$, so that the characteristic temperature is $\mathcal{T}=\beta d$. The exact definition of $\beta$ (and therefore of the Rayleigh number) depends on the mode of heating, but still:
     + $\mathcal{H}=$`bg_eff` for uniform internal heating (`heating=0`)
-    + $\mathcal{H}=$ `bg_eff` $/r^3$ for differential heating (`heating=1`)
+    + $\mathcal{H}=$ `bg_eff` $/r^3$ for differential heating (`heating=1`)  
 **Currently the correct** `bg_eff` **is not implemented for fixed-flux conditions, but the code can still be used to calculate the onset of convection. The resulting Rayleigh number needs, however, to be corrected to account for this discrepancy.**
 
 

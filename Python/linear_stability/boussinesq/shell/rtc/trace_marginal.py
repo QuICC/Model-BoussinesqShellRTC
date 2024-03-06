@@ -22,6 +22,11 @@ rescale = False
 #res = [64, 92, 0]
 #Ta = 1e12; Ek = Ta**-0.5; Rac = 7.4758215298779; mc = 245
 
+# SF/SF, FT/FT, differential heating
+#bc_vel = 1; bc_temp = 0; heating = 1; rratio = 0.35; Pr = 1; rescale = True
+#res = [96, 96, 0]
+#Ta = 1e10; Ek = Ta**-0.5; Rac = 40; mc = 10
+
 # SF/SF, FT/FT, internal heating
 #bc_vel = 1; bc_temp = 0; heating = 0; rratio = 0.35; Pr = 1; rescale = True
 #Ta = 1e6; Ek = Ta**-0.5
@@ -52,13 +57,13 @@ rescale = False
 #res = [1024, 384, 0]
 
 # NS/NS, FT/FT, internal heating
-#bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.35; Pr = 1; rescale = True
+bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.35; Pr = 1; rescale = True
 #Ta = 1e6; Ek = Ta**-0.5
 #res = [32, 32, 0]
 #Ta = 1e7; Ek = Ta**-0.5
 #res = [32, 32, 0]
-#Ta = 1e8; Ek = Ta**-0.5; Rac = 31.534088376364; mc = 6
-#res = [48, 48, 0]
+Ta = 1e8; Ek = Ta**-0.5; Rac = 31.534088376364; mc = 6
+res = [48, 48, 0]
 #Ta = 1e9; Ek = Ta**-0.5; Rac = 42.219154540505; mc = 9
 #res = [48, 48, 0]
 #Ta = 1e10; Ek = Ta**-0.5; Rac = 59.124359856967; mc = 13
@@ -111,8 +116,8 @@ rescale = False
 
 # NS/NS, FT/FT, internal heating, ri/ro =  0.4
 #bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.4; Pr = 1; rescale = False
-Ek = 3e-3; Rac = 27.254; mc = 4
-res = [32, 32, 0]
+#Ek = 3e-3; Rac = 27.254; mc = 4
+#res = [32, 32, 0]
 #Ek = 1e-3; Rac = 23.7692; mc = 5
 #res = [32, 32, 0]
 #Ek = 5e-4; Rac = 25.6031; mc = 6
@@ -172,14 +177,15 @@ marginal_options['minimum_int'] = True
 marginal_options['plot_curve'] = True
 marginal_options['solve'] = True
 marginal_options['point_k'] = m
-marginal_options['plot_point'] = False
+marginal_options['plot_point'] = True
 marginal_options['viz_mode'] = 0
 marginal_options['show_spectra'] = True
 marginal_options['show_physical'] = True
 marginal_options['save_physical'] = True
+marginal_options['save_spectra'] = True
 marginal_options['impose_symmetry'] = False
 marginal_options['use_spherical_evp'] = False
-marginal_options['curve_points'] = np.arange(max(1,m-3), m+10, 1)
+marginal_options['curve_points'] = np.arange(max(1,m-2), m+2, 1)
 
 # Compute
 MarginalCurve.compute(gevp_opts, marginal_options)

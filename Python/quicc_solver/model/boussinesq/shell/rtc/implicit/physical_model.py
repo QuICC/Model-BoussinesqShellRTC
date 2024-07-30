@@ -22,7 +22,14 @@ class PhysicalModel(base_model.BaseModel):
     def nondimensional_parameters(self):
         """Get the list of nondimensional parameters"""
 
-        return ["ekman", "prandtl", "rayleigh", "r_ratio", "heating"]
+        return ["ekman", "prandtl", "rayleigh", "r_ratio", "heating","alpha","beta"]
+
+        # alpha = 1 yields a linear gravity in r, whereas alpha !=1 leads to a alpha*r+(1-alpha)/r^2 type gravity profile
+        # beta = 1 yields a linear dT/dr in r, whereas beta !=1 leads to a beta*r+(1-beta)/r^2 type dT/dr profile
+        # heating=0: internal heating;   
+        # heating=1: differential heating; 
+        # heating=2: differential heating + internal heating (proportional to r)
+        # heating=3: differential heating + internal heating (general form)
 
     def automatic_parameters(self, eq_params):
         """Extend parameters with automatically computable values"""
@@ -258,8 +265,17 @@ class PhysicalModel(base_model.BaseModel):
         if field_row == ("temperature","") and field_col == ("velocity","pol"):
             if eq_params["heating"] == 0:
                 mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, -bg_eff, with_sh_coeff = 'laplh', restriction = restriction)
-            else:
+            elif eq_params["heating"] == 1:
                 mat = geo.i2(res[0], ri, ro, res[1], m, bc, -bg_eff, with_sh_coeff = 'laplh', restriction = restriction)
+            elif eq_params["heating"] == 2:
+                beta = eq_params['beta']
+                # assumes length-scale is the depth of the shell
+                c1 = beta*bg_eff/ro # internal heating contribution
+                c2 = ro**2*(1-beta*bg_eff) # differential heating contribution
+                if beta==1: # same as for heating=0
+                    mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, c1, with_sh_coeff = 'laplh', restriction = restriction)
+                else:
+                    mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, c1, with_sh_coeff = 'laplh', restriction = restriction) + geo.i2(res[0], ri, ro, res[1], m, bc, c2, with_sh_coeff = 'laplh', restriction = restriction)
 
         if mat is None:
             raise RuntimeError("Equations are not setup properly!")
@@ -280,8 +296,14 @@ class PhysicalModel(base_model.BaseModel):
         if field_row == ("temperature","") and field_col == field_row:
             if eq_params["heating"] == 0:
                 mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
-            else:
+            elif eq_params["heating"] == 1:
                 mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
+            elif eq_params["heating"] == 2:
+                beta = eq_params['beta']
+                if beta==1: # same as for heating=0
+                    mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
+                else:
+                    mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
 
         if mat is None:
             raise RuntimeError("Equations are not setup properly!")
@@ -341,8 +363,17 @@ class PhysicalModel(base_model.BaseModel):
                 if self.linearize:
                     if eq_params["heating"] == 0:
                         mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, bg_eff/Pr, with_sh_coeff = 'laplh', restriction = restriction)
-                    else:
+                    elif eq_params["heating"] == 1:
                         mat = geo.i2(res[0], ri, ro, res[1], m, bc, bg_eff/Pr, with_sh_coeff = 'laplh', restriction = restriction)
+                    elif eq_params["heating"] == 2:
+                        beta = eq_params['beta']
+                        # assumes length-scale is the depth of the shell
+                        c1 = beta*bg_eff/ro # internal heating contribution
+                        c2 = ro**2*(1-beta*bg_eff) # differential heating contribution
+                        if beta==1: # same as for heating=0
+                            mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, c1/Pr, with_sh_coeff = 'laplh', restriction = restriction)
+                        else:
+                            mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, c1/Pr, with_sh_coeff = 'laplh', restriction = restriction) + geo.i2(res[0], ri, ro, res[1], m, bc, c2/Pr, with_sh_coeff = 'laplh', restriction = restriction)
 
                 else:
                     mat = geo.zblk(res[0], ri, ro, res[1], m, bc)
@@ -350,8 +381,14 @@ class PhysicalModel(base_model.BaseModel):
             elif field_col == ("temperature",""):
                 if eq_params["heating"] == 0:
                     mat = geo.i2r2lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
-                else:
+                elif eq_params["heating"] == 1:
                     mat = geo.i2r3lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
+                elif eq_params["heating"] == 2:
+                    beta = eq_params['beta']
+                    if beta==1: # same as for heating=0
+                        mat = geo.i2r2lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
+                    else:
+                        mat = geo.i2r3lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
 
         if mat is None:
             raise RuntimeError("Equations are not setup properly!")
@@ -378,8 +415,14 @@ class PhysicalModel(base_model.BaseModel):
         elif field_row == ("temperature",""):
             if eq_params["heating"] == 0:
                 mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
-            else:
+            elif eq_params["heating"] == 1:
                 mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
+            elif eq_params["heating"] == 2:
+                beta = eq_params['beta']
+                if beta == 1: # same as for heating=0
+                    mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
+                else:
+                    mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
 
         if mat is None:
             raise RuntimeError("Equations are not setup properly!")
@@ -440,9 +483,12 @@ class PhysicalModel(base_model.BaseModel):
         elif eq_params['heating'] == 1:
             # (R_o - R_i) rescaling
             Ra_eff = (Ra*T/ro)
-            bg_eff = ro**2*rratio
-
+            bg_eff = ro**2*rratio       
         # Rescale Rayleigh by E^{-4/3}
         # Ra_eff = Ra_eff*T**(1./3.)
+        elif eq_params['heating'] == 2:
+            Ra_eff = (Ra*T/ro)
+            bg_eff = 1
+
 
         return (Ra_eff, bg_eff)

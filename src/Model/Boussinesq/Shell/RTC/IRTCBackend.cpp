@@ -30,6 +30,8 @@
 #include "QuICC/PhysicalNames/Temperature.hpp"
 #include "QuICC/NonDimensional/Prandtl.hpp"
 #include "QuICC/NonDimensional/Rayleigh.hpp"
+#include "QuICC/NonDimensional/Alpha.hpp"
+#include "QuICC/NonDimensional/Beta.hpp"
 #include "QuICC/NonDimensional/Ekman.hpp"
 #include "QuICC/NonDimensional/Heating.hpp"
 #include "QuICC/NonDimensional/RRatio.hpp"
@@ -91,6 +93,8 @@ namespace RTC {
       std::vector<std::string> names = {
          NonDimensional::Prandtl().tag(),
          NonDimensional::Rayleigh().tag(),
+	 NonDimensional::Alpha().tag(),
+	 NonDimensional::Beta().tag(),
          NonDimensional::Ekman().tag(),
          NonDimensional::Heating().tag(),
          NonDimensional::RRatio().tag()

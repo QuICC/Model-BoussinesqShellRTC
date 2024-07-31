@@ -267,7 +267,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, -bg_eff, with_sh_coeff = 'laplh', restriction = restriction)
             elif eq_params["heating"] == 1:
                 mat = geo.i2(res[0], ri, ro, res[1], m, bc, -bg_eff, with_sh_coeff = 'laplh', restriction = restriction)
-            elif eq_params["heating"] == 2:
+            elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
                 # assumes length-scale is the depth of the shell
                 c1 = beta*bg_eff/ro # internal heating contribution
@@ -298,7 +298,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
             elif eq_params["heating"] == 1:
                 mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
-            elif eq_params["heating"] == 2:
+            elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
                 if beta==1: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
@@ -353,7 +353,11 @@ class PhysicalModel(base_model.BaseModel):
                 mat = mat + geo.i4r4lapl(res[0], ri, ro, res[1], m, bc, 1j*m*T/c_dt, with_sh_coeff = 'invlaplh', l_zero_fix = 'zero', restriction = restriction)
 
             elif field_col == ("temperature",""):
-                mat = geo.i4r4(res[0], ri, ro, res[1], m, bc, -Ra_eff/c_dt**2, l_zero_fix = 'zero', restriction = restriction)
+                alpha = eq_params['alpha']
+                c1 = -Ra_eff * alpha /c_dt**2
+                c2 = -Ra_eff *(1-alpha) * ro**3 /c_dt**2
+                #mat = geo.i4r4(res[0], ri, ro, res[1], m, bc, -Ra_eff/c_dt**2, l_zero_fix = 'zero', restriction = restriction)
+                mat = geo.i4r4(res[0], ri, ro, res[1], m, bc, c1, l_zero_fix = 'zero', restriction = restriction) + geo.i4r1(res[0], ri, ro, res[1], m, bc, c2, l_zero_fix = 'zero', restriction = restriction)
 
         elif field_row == ("temperature",""):
             if field_col == ("velocity","tor"):
@@ -365,7 +369,7 @@ class PhysicalModel(base_model.BaseModel):
                         mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, bg_eff/Pr, with_sh_coeff = 'laplh', restriction = restriction)
                     elif eq_params["heating"] == 1:
                         mat = geo.i2(res[0], ri, ro, res[1], m, bc, bg_eff/Pr, with_sh_coeff = 'laplh', restriction = restriction)
-                    elif eq_params["heating"] == 2:
+                    elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                         beta = eq_params['beta']
                         # assumes length-scale is the depth of the shell
                         c1 = beta*bg_eff/ro # internal heating contribution
@@ -383,7 +387,7 @@ class PhysicalModel(base_model.BaseModel):
                     mat = geo.i2r2lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
                 elif eq_params["heating"] == 1:
                     mat = geo.i2r3lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
-                elif eq_params["heating"] == 2:
+                elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                     beta = eq_params['beta']
                     if beta==1: # same as for heating=0
                         mat = geo.i2r2lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
@@ -417,7 +421,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
             elif eq_params["heating"] == 1:
                 mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
-            elif eq_params["heating"] == 2:
+            elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
                 if beta == 1: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
@@ -489,6 +493,8 @@ class PhysicalModel(base_model.BaseModel):
         elif eq_params['heating'] == 2:
             Ra_eff = (Ra*T/ro)
             bg_eff = 1
-
+        elif eq_params['heating'] == 3:
+            Ra_eff = (Ra*T/ro)
+            bg_eff = 1/(1-rratio**3)
 
         return (Ra_eff, bg_eff)

@@ -130,6 +130,13 @@ res = [32, 32, 0]
 #bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.6; Pr = 1; rescale = False
 #Ek = 1e-4; Rac = 27.0031; mc = 18
 
+# NS/NS, FT/FT, heating=2, ri/ro=0.35
+#bc_vel = 0; bc_temp = 0
+#heating = 2; alpha=0; beta=1
+#rratio = 0.35; Pr = 0.1; rescale = False
+#Ek = 0.5e-3;  Rac = 18.747; mc = 3
+#res = [32, 32, 0]
+
 # Convert Ekman to Taylor number
 Ta = Ek**-2
 
@@ -179,7 +186,7 @@ marginal_options['show_physical'] = True
 marginal_options['save_physical'] = True
 marginal_options['impose_symmetry'] = False
 marginal_options['use_spherical_evp'] = False
-marginal_options['curve_points'] = np.arange(max(1,m-3), m+10, 1)
+marginal_options['curve_points'] = np.arange(max(1,m-3), m+4, 1)
 
 # Compute
 MarginalCurve.compute(gevp_opts, marginal_options)

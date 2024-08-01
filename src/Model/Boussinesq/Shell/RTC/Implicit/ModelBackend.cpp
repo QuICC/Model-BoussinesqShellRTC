@@ -54,6 +54,7 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4D1.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl2.hpp"
@@ -490,7 +491,7 @@ namespace Implicit {
                   SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nN, nN, ri, ro, l);
                   bMat = (1.0/Pr)*spasm.mat();
                }
-               else
+               else if(heatingMode == 1)
                {
                   SparseSM::Chebyshev::LinearMap::I2Y3SphLapl spasm(nN, nN, ri, ro, l);
                   bMat = (1.0/Pr)*spasm.mat();
@@ -607,7 +608,7 @@ namespace Implicit {
                SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
                bMat = spasm.mat();
             }
-            else
+            else if(heatingMode == 1)
             {
                SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nN, nN, ri, ro);
                bMat = spasm.mat();
@@ -854,7 +855,7 @@ namespace Implicit {
                   }
                   //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift, -bg*ll1);
                }
-               else
+               else if(heatingMode == 1)
                {
                   SparseSM::Chebyshev::LinearMap::I2 spasm(nN, nN, ri, ro);
                   bMat = -bg*ll1*spasm.mat();
@@ -906,7 +907,7 @@ namespace Implicit {
                   }
                   //this->addBlock(decMat.real(), spasm.mat(), rowShift, colShift);
                }
-               else
+               else if(heatingMode == 1)
                {
                   SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nN, nN, ri, ro);
                   bMat = spasm.mat();

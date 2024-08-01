@@ -48,6 +48,7 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3SphLapl.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4SphLapl2.hpp"
@@ -155,6 +156,7 @@ namespace RTC {
       auto ro = nds.find(NonDimensional::Upper1d::id())->second->value();
       auto rratio = nds.find(NonDimensional::RRatio::id())->second->value();
       auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
+      auto beta = nds.find(NonDimensional::Beta::id())->second->value();
 
       if(ro == 1.0)
       {
@@ -170,6 +172,15 @@ namespace RTC {
       else if(heatingMode == 1)
       {
          effBg = ro*ro*rratio;
+      }
+      // gap with mixed heating
+      else if(heatingMode == 2)
+      {
+         effBg = 1.0;
+      }
+      else if(heatingMode == 2)
+      {
+         effBg = 1.0 / (1-rratio*rratio*rratio);
       }
 
       return effBg;

@@ -259,10 +259,10 @@ class PhysicalModel(base_model.BaseModel):
                 # assumes length-scale is the depth of the shell
                 c1 = beta*bg_eff/ro # internal heating contribution
                 c2 = ro**2*(1-beta*bg_eff) # differential heating contribution
-            if beta==1: # same as for heating=0
-                mat = geo.i2r2(res[0], ri, ro, bc, -c1*l*(l+1.0))
-            else:
-                mat = geo.i2r3(res[0], ri, ro, bc, -c1*l*(l+1.0)) + geo.i2(res[0], ri, ro, bc, -c2*l*(l+1.0))
+                if beta==1: # same as for heating=0
+                    mat = geo.i2r2(res[0], ri, ro, bc, -c1*l*(l+1.0))
+                else:
+                    mat = geo.i2r3(res[0], ri, ro, bc, -c1*l*(l+1.0)) + geo.i2(res[0], ri, ro, bc, -c2*l*(l+1.0))
 
         if mat is None:
             raise RuntimeError("Equations are not setup properly!")

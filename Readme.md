@@ -74,4 +74,6 @@ $$
 \frac{dT}{dr} = T'_o\left[\frac{1}{1-\chi^3}\left(\frac{r}{r_o}\right)\beta + \left(\frac{r_o}{r}\right)^2\left(1-\frac{\beta}{1-\chi^3}\right)\right]
 $$
 
+In both formulations, `heating`=1 is the pure internal heating case, and `heating`=0 is the differential heating case.
+
 In both cases, tempreature is nondimensionalised via $T'_o$, the temperature gradient at the outer boundary, $r_o$. In the above definition of the Rayleigh number, therefore: $\mathcal{T} = D T'_o$.

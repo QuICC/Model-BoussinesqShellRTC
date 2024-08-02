@@ -479,8 +479,8 @@ namespace Explicit {
                }
                else //general gravity
                {
-                  // need to look better into the split equation part
-                  //SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
+                  // To fully implement the splitEquation version , we need to update the nonlinear operator
+                  // work in progress
                   SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro); 
                   decMat.real() = Ra*spasm.mat();                  
                }

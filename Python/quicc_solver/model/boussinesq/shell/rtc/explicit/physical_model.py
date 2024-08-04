@@ -259,7 +259,7 @@ class PhysicalModel(base_model.BaseModel):
                 # assumes length-scale is the depth of the shell
                 c1 = beta*bg_eff/ro # internal heating contribution
                 c2 = ro**2*(1-beta*bg_eff) # differential heating contribution
-                if beta==bg_eff: # same as for heating=0
+                if beta==1/bg_eff: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, bc, -c1*l*(l+1.0))
                 else:
                     mat = geo.i2r3(res[0], ri, ro, bc, -c1*l*(l+1.0)) + geo.i2(res[0], ri, ro, bc, -c2*l*(l+1.0))
@@ -283,7 +283,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r3(res[0], ri, ro, bc)
             elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
-                if beta==bg_eff: # same as for heating=0
+                if beta==1/bg_eff: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, bc)
                 else:
                     mat = geo.i2r3(res[0], ri, ro, bc)
@@ -318,7 +318,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r3lapl(res[0], ri, ro, l, bc, 1.0/Pr)
             elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                     beta = eq_params['beta']
-                    if beta==bg_eff: # same as for heating=0
+                    if beta==1/bg_eff: # same as for heating=0
                         mat = geo.i2r2lapl(res[0], ri, ro, l, bc, 1.0/Pr)
                     else:
                          mat = geo.i2r3lapl(res[0], ri, ro, l, bc, 1.0/Pr)
@@ -351,7 +351,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r3(res[0], ri, ro, bc)
             elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
-                if beta == bg_eff: # same as for heating=0
+                if beta == 1/bg_eff: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, bc)
                 else:
                     mat = geo.i2r3(res[0], ri, ro, bc)

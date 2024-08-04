@@ -272,7 +272,7 @@ class PhysicalModel(base_model.BaseModel):
                 # assumes length-scale is the depth of the shell
                 c1 = -beta*bg_eff/ro # internal heating contribution
                 c2 = -ro**2*(1-beta*bg_eff) # differential heating contribution
-                if beta==bg_eff: # same as for heating=0
+                if beta==1/bg_eff: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, c1, with_sh_coeff = 'laplh', restriction = restriction)
                 else:
                     mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, c1, with_sh_coeff = 'laplh', restriction = restriction) + geo.i2(res[0], ri, ro, res[1], m, bc, c2, with_sh_coeff = 'laplh', restriction = restriction)
@@ -300,7 +300,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
             elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
-                if beta==bg_eff: # same as for heating=0
+                if beta==1/bg_eff: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
                 else:
                     mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
@@ -374,7 +374,7 @@ class PhysicalModel(base_model.BaseModel):
                         # assumes length-scale is the depth of the shell
                         c1 = beta*bg_eff/ro # internal heating contribution
                         c2 = ro**2*(1-beta*bg_eff) # differential heating contribution
-                        if beta==bg_eff: # same as for heating=0
+                        if beta==1/bg_eff: # same as for heating=0
                             mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, c1/Pr, with_sh_coeff = 'laplh', restriction = restriction)
                         else:
                             mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, c1/Pr, with_sh_coeff = 'laplh', restriction = restriction) + geo.i2(res[0], ri, ro, res[1], m, bc, c2/Pr, with_sh_coeff = 'laplh', restriction = restriction)
@@ -389,7 +389,7 @@ class PhysicalModel(base_model.BaseModel):
                     mat = geo.i2r3lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
                 elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                     beta = eq_params['beta']
-                    if beta==bg_eff: # same as for heating=0
+                    if beta==1/bg_eff: # same as for heating=0
                         mat = geo.i2r2lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
                     else:
                         mat = geo.i2r3lapl(res[0], ri, ro, res[1], m, bc, 1.0/(Pr*c_dt), restriction = restriction)
@@ -423,7 +423,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
             elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
-                if beta == bg_eff: # same as for heating=0
+                if beta == 1/bg_eff: # same as for heating=0
                     mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
                 else:
                     mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)

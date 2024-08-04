@@ -237,6 +237,7 @@ namespace Explicit {
          auto Pr = nds.find(NonDimensional::Prandtl::id())->second->value();
          auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
          auto beta = nds.find(NonDimensional::Beta::id())->second->value();
+         auto bg = effectiveBg(nds);
 
          if(heatingMode == 0)
          {
@@ -250,7 +251,7 @@ namespace Explicit {
          }
          else if(heatingMode == 2 || heatingMode == 3)
          {
-            if(beta == 1)
+            if(beta == bg)
             {
                SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nN, nN, ri, ro, l);
                decMat.real() = (1.0/Pr)*spasm.mat();
@@ -300,6 +301,7 @@ namespace Explicit {
       {
          auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
          auto beta = nds.find(NonDimensional::Beta::id())->second->value();
+         auto bg = effectiveBg(nds);
 
          if(heatingMode == 0)
          {
@@ -313,7 +315,7 @@ namespace Explicit {
          }
          else if(heatingMode == 2 || heatingMode == 3)
          {
-            if(beta == 1)
+            if(beta == bg)
             {
                SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
                decMat.real() = spasm.mat();
@@ -524,7 +526,7 @@ namespace Explicit {
                MHDFloat c1, c2;
                c1 = beta*bg/ro;
                c2 = ro*ro*(1-beta*bg);
-               if(beta == 1) 
+               if(beta == bg) 
                {
                   SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
                   decMat.real() = -c1*ll1*spasm.mat();
@@ -550,6 +552,7 @@ namespace Explicit {
          {
             auto heatingMode = nds.find(NonDimensional::Heating::id())->second->value();
             auto beta = nds.find(NonDimensional::Beta::id())->second->value();
+            auto bg = effectiveBg(nds);
 
             if(heatingMode == 0)
             {
@@ -563,7 +566,7 @@ namespace Explicit {
             }
             else if(heatingMode == 2 || heatingMode == 3)
             {
-               if(beta==1)
+               if(beta==bg)
                {
                   SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
                   decMat.real() = spasm.mat();

@@ -531,6 +531,11 @@ namespace Explicit {
                   SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nN, nN, ri, ro);
                   decMat.real() = -c1*ll1*spasm.mat();
                }
+               else if(beta == 0)
+               {
+                  SparseSM::Chebyshev::LinearMap::I2 spasm(nN, nN, ri, ro);
+                  decMat.real() = -c2*ll1*spasm.mat();
+               }
                else
                {
                   SparseSM::Chebyshev::LinearMap::I2Y3 i2r3(nN, nN, ri, ro);

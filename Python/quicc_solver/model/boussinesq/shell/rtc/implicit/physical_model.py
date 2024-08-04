@@ -272,8 +272,10 @@ class PhysicalModel(base_model.BaseModel):
                 # assumes length-scale is the depth of the shell
                 c1 = -beta*bg_eff/ro # internal heating contribution
                 c2 = -ro**2*(1-beta*bg_eff) # differential heating contribution
-                if beta==1/bg_eff: # same as for heating=0
+                if beta==1/bg_eff: # similar to heating=0
                     mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, c1, with_sh_coeff = 'laplh', restriction = restriction)
+                elif beta==0: # similar to heating==1
+                    mat = geo.i2(res[0], ri, ro, res[1], m, bc, c2, with_sh_coeff = 'laplh', restriction = restriction)
                 else:
                     mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, c1, with_sh_coeff = 'laplh', restriction = restriction) + geo.i2(res[0], ri, ro, res[1], m, bc, c2, with_sh_coeff = 'laplh', restriction = restriction)
 
@@ -291,6 +293,8 @@ class PhysicalModel(base_model.BaseModel):
 
         ri, ro = (self.automatic_parameters(eq_params)['lower1d'], self.automatic_parameters(eq_params)['upper1d'])
 
+        Ra_eff, bg_eff = self.nondimensional_factors(eq_params)
+
         mat = None
         bc = self.convert_bc(eq_params,eigs,bcs,field_row,field_col)
         if field_row == ("temperature","") and field_col == field_row:
@@ -300,7 +304,7 @@ class PhysicalModel(base_model.BaseModel):
                 mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
             elif eq_params["heating"] == 2 or eq_params["heating"] == 3:
                 beta = eq_params['beta']
-                if beta==1/bg_eff: # same as for heating=0
+                if beta==1/bg_eff: # similar to heating=0
                     mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, restriction = restriction)
                 else:
                     mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, restriction = restriction)
@@ -374,8 +378,10 @@ class PhysicalModel(base_model.BaseModel):
                         # assumes length-scale is the depth of the shell
                         c1 = beta*bg_eff/ro # internal heating contribution
                         c2 = ro**2*(1-beta*bg_eff) # differential heating contribution
-                        if beta==1/bg_eff: # same as for heating=0
+                        if beta==1/bg_eff: # similar to heating=0
                             mat = geo.i2r2(res[0], ri, ro, res[1], m, bc, c1/Pr, with_sh_coeff = 'laplh', restriction = restriction)
+                        elif beta==0:  # similar to heating=1
+                            mat = geo.i2(res[0], ri, ro, res[1], m, bc, c2/Pr, with_sh_coeff = 'laplh', restriction = restriction)
                         else:
                             mat = geo.i2r3(res[0], ri, ro, res[1], m, bc, c1/Pr, with_sh_coeff = 'laplh', restriction = restriction) + geo.i2(res[0], ri, ro, res[1], m, bc, c2/Pr, with_sh_coeff = 'laplh', restriction = restriction)
 
@@ -407,6 +413,8 @@ class PhysicalModel(base_model.BaseModel):
         m = int(eigs[0])
 
         ri, ro = (self.automatic_parameters(eq_params)['lower1d'], self.automatic_parameters(eq_params)['upper1d'])
+
+        Ra_eff, bg_eff = self.nondimensional_factors(eq_params)
 
         mat = None
         bc = self.convert_bc(eq_params,eigs,bcs,field_row,field_row)

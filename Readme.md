@@ -51,9 +51,11 @@ The parameters $\alpha$ (`alpha`) and $\beta$ (`beta`) can be used to set up gen
 
 ### Gravity:
 The following general gravity profile is implemented:
+
 $$
 {\bf g} = -g_o\left[\left(\frac{r}{r_o}\right)\alpha + \left(\frac{r_o}{r}\right)^2(1-\alpha)\right]\hat{\bf r}
 $$
+
 where, with $\alpha=1$ a linear profile is obtained, adequate for an inner core of the same density as the outer core.
 
 **This is the feature not implemented in the SplitEqaution formalism.**
@@ -65,11 +67,13 @@ General background temperature profiles, $T$, containing a mix of both internal 
 There are two options, chosed via the parameter `heating`:
 
 - `heating`=2 implements a purely linear internal heating component, resulting in:
+
 $$
 T = T'_o\left[\left(\frac{r}{r_o}\right)\beta + \left(\frac{r_o}{r}\right)^2(1-\beta)\right]
 $$
 
 - `heating`=3 implements a fully general form for the  internal heating component, resulting in:
+
 $$
 \frac{dT}{dr} = T'_o\left[\frac{1}{1-\chi^3}\left(\frac{r}{r_o}\right)\beta + \left(\frac{r_o}{r}\right)^2\left(1-\frac{\beta}{1-\chi^3}\right)\right]
 $$

@@ -32,6 +32,8 @@
 #include "QuICC/NonDimensional/CflInertial.hpp"
 #include "QuICC/NonDimensional/Ekman.hpp"
 #include "QuICC/NonDimensional/Heating.hpp"
+#include "QuICC/NonDimensional/Alpha.hpp"
+#include "QuICC/NonDimensional/Beta.hpp"
 #include "QuICC/NonDimensional/Lower1d.hpp"
 #include "QuICC/NonDimensional/Prandtl.hpp"
 #include "QuICC/NonDimensional/RRatio.hpp"
@@ -54,6 +56,7 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3SphLapl.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y1.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y4D1.hpp"
@@ -642,9 +645,24 @@ std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
                const auto ro =
                   nds.find(NonDimensional::Upper1d::id())->second->value();
                const auto Ra = RTC::implDetails::effectiveRa(nds);
+               const auto alpha =
+                  nds.find(NonDimensional::Alpha::id())->second->value();
 
-               SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nNr, nNc, ri, ro);
-               bMat = -Ra * i4r4.mat();
+               MHDFloat c1, c2;
+               c1 = Ra*alpha;
+               c2 = Ra*(1.-alpha)*(ro*ro*ro);
+
+               if (alpha == 1)
+               {
+                  SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nNr, nNc, ri, ro);
+                  bMat = -Ra * i4r4.mat();
+               }
+               else
+               {
+                  SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nNr, nNc, ri, ro);
+                  SparseSM::Chebyshev::LinearMap::I4Y1 i4r1(nNr, nNc, ri, ro);
+                  bMat = -c1 * i4r4.mat() - c2 * i4r1.mat();
+               }
             }
 
             return bMat;
@@ -676,8 +694,11 @@ std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
                nds.find(NonDimensional::Upper1d::id())->second->value();
             const auto heatingMode =
                nds.find(NonDimensional::Heating::id())->second->value();
+            const auto beta =
+               nds.find(NonDimensional::Beta::id())->second->value();
             const auto Pr =
                nds.find(NonDimensional::Prandtl::id())->second->value();
+            const auto bg = RTC::implDetails::effectiveBg(nds);
 
             if (heatingMode == 0)
             {
@@ -685,11 +706,26 @@ std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
                   ro, l);
                bMat = (1.0 / Pr) * spasm.mat();
             }
-            else
+            else if (heatingMode == 1)
             {
                SparseSM::Chebyshev::LinearMap::I2Y3SphLapl spasm(nNr, nNc, ri,
                   ro, l);
                bMat = (1.0 / Pr) * spasm.mat();
+            }
+            else if(heatingMode == 2 || heatingMode == 3)
+            {
+               if(beta == 1/bg)
+               {
+                  SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nNr, nNc, ri, ro,
+                  l);
+                  bMat = (1.0/Pr)*spasm.mat();
+               }
+               else
+               {
+                  SparseSM::Chebyshev::LinearMap::I2Y3SphLapl spasm(nNr, nNc, ri, ro,
+                  l);
+                  bMat = (1.0/Pr)*spasm.mat();
+               }
             }
 
             return bMat;
@@ -847,6 +883,9 @@ std::vector<details::BlockDescription> ModelBackend::timeBlockBuilder(
             nds.find(NonDimensional::Upper1d::id())->second->value();
          const auto heatingMode =
             nds.find(NonDimensional::Heating::id())->second->value();
+         const auto beta =
+            nds.find(NonDimensional::Beta::id())->second->value();
+         const auto bg = RTC::implDetails::effectiveBg(nds);
 
          SparseMatrix bMat(nNr, nNc);
          if (heatingMode == 0)
@@ -854,10 +893,23 @@ std::vector<details::BlockDescription> ModelBackend::timeBlockBuilder(
             SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
             bMat = spasm.mat();
          }
-         else
+         else if (heatingMode == 1)
          {
             SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nNr, nNc, ri, ro);
             bMat = spasm.mat();
+         }
+         else if(heatingMode == 2 || heatingMode == 3)
+         {
+            if(beta == 1/bg)
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+               bMat = spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nNr, nNc, ri, ro);
+               bMat = spasm.mat();
+            }
          }
 
          return bMat;
@@ -1126,9 +1178,24 @@ std::vector<details::BlockDescription> ModelBackend::explicitLinearBlockBuilder(
          const auto ro =
             nds.find(NonDimensional::Upper1d::id())->second->value();
          const auto Ra = RTC::implDetails::effectiveRa(nds);
+         const auto alpha =
+            nds.find(NonDimensional::Alpha::id())->second->value();
 
-         SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nNr, nNc, ri, ro);
-         bMat = Ra * spasm.mat();
+         MHDFloat c1, c2;
+         c1 = Ra*alpha;
+         c2 = Ra*(1.-alpha)*(ro*ro*ro);
+
+         if (alpha == 1)
+         {      
+            SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nNr, nNc, ri, ro);
+            bMat = Ra * spasm.mat();
+         }
+         else
+         {
+            SparseSM::Chebyshev::LinearMap::I4Y4 i4r4(nNr, nNc, ri, ro);
+            SparseSM::Chebyshev::LinearMap::I4Y1 i4r1(nNr, nNc, ri, ro);
+            bMat = c1 * i4r4.mat() + c2 * i4r1.mat();
+         }
 
          return bMat;
       };
@@ -1158,6 +1225,8 @@ std::vector<details::BlockDescription> ModelBackend::explicitLinearBlockBuilder(
             nds.find(NonDimensional::Upper1d::id())->second->value();
          const auto heatingMode =
             nds.find(NonDimensional::Heating::id())->second->value();
+         const auto beta =
+            nds.find(NonDimensional::Beta::id())->second->value();
          const auto bg = RTC::implDetails::effectiveBg(nds);
          const auto dl = static_cast<MHDFloat>(l);
          const auto ll1 = dl * (dl + 1.0);
@@ -1167,10 +1236,32 @@ std::vector<details::BlockDescription> ModelBackend::explicitLinearBlockBuilder(
             SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
             bMat = -bg * ll1 * spasm.mat();
          }
-         else
+         else if (heatingMode == 1)
          {
             SparseSM::Chebyshev::LinearMap::I2 spasm(nNr, nNc, ri, ro);
             bMat = -bg * ll1 * spasm.mat();
+         }
+         else if(heatingMode == 2 || heatingMode == 3)
+         {
+            MHDFloat c1, c2;
+            c1 = beta*bg/ro;
+            c2 = ro*ro*(1-beta*bg);
+            if(beta == 1/bg) 
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+               bMat = -c1*ll1*spasm.mat();
+            }
+            else if(beta == 0)
+            {
+               SparseSM::Chebyshev::LinearMap::I2 spasm(nNr, nNc, ri, ro);
+               bMat = -c2*ll1*spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y3 i2r3(nNr, nNc, ri, ro);
+               SparseSM::Chebyshev::LinearMap::I2 i2(nNr, nNc, ri, ro);
+               bMat = -c1*ll1*i2r3.mat() -c2*ll1*i2.mat();
+            }
          }
 
          return bMat;
@@ -1234,16 +1325,32 @@ ModelBackend::explicitNonlinearBlockBuilder(const SpectralFieldId& rowId,
             nds.find(NonDimensional::Upper1d::id())->second->value();
          const auto heatingMode =
             nds.find(NonDimensional::Heating::id())->second->value();
+         const auto beta =
+            nds.find(NonDimensional::Beta::id())->second->value();
+         const auto bg = RTC::implDetails::effectiveBg(nds);
 
          if (heatingMode == 0)
          {
             SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
             bMat = spasm.mat();
          }
-         else
+         else if (heatingMode == 1)
          {
             SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nNr, nNc, ri, ro);
             bMat = spasm.mat();
+         }
+         else if(heatingMode == 2 || heatingMode == 3)
+         {
+            if(beta==1/bg)
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+               bMat = spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y3 spasm(nNr, nNc, ri, ro);
+               bMat = spasm.mat();
+            }
          }
 
          return bMat;

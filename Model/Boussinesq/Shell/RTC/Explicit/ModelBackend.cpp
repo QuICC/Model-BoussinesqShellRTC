@@ -899,7 +899,7 @@ std::vector<details::BlockDescription> ModelBackend::explicitLinearBlockBuilder(
          }
          else
          {
-            if(alpha == 1) // linear gravity
+            if(alpha == 100) // linear gravity
             {
                SparseSM::Chebyshev::LinearMap::I4Y4 spasm(nNr, nNc, ri, ro);
                bMat = Ra * spasm.mat();

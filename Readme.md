@@ -41,3 +41,43 @@ The system is solved using a Toroidal/Poloidal decomposition of the velocity
 $$
 {\bf u} = \nabla\times T {\bf r} + \nabla\times\nabla\times P {\bf r} .
 $$
+
+
+## General background profiles
+
+**The following functionalities are currently implemented only for the Explicit models, and not for the SplitEqaution formalism.**
+
+The parameters $\alpha$ (`alpha`) and $\beta$ (`beta`) can be used to set up general gravity and background temperature profiles. The following are currently implemented:
+
+### Gravity:
+The following general gravity profile is implemented:
+
+$$
+{\bf g} = -g_o\left[\left(\frac{r}{r_o}\right)\alpha + \left(\frac{r_o}{r}\right)^2(1-\alpha)\right]\hat{\bf r}
+$$
+
+where, with $\alpha=1$ a linear profile is obtained, adequate for an inner core of the same density as the outer core.
+
+**This is the feature not implemented in the SplitEqaution formalism.**
+
+### Temperature:
+
+General background temperature profiles, $T$, containing a mix of both internal and differential heating are implemented.
+
+There are two options, chosed via the parameter `heating`:
+
+- `heating`=2 implements a purely linear internal heating component, resulting in:
+
+$$
+T = T'_o\left[\left(\frac{r}{r_o}\right)\beta + \left(\frac{r_o}{r}\right)^2(1-\beta)\right]
+$$
+
+- `heating`=3 implements a fully general form for the  internal heating component, resulting in:
+
+$$
+\frac{dT}{dr} = T'_o\left[\frac{1}{1-\chi^3}\left(\frac{r}{r_o}\right)\beta + \left(\frac{r_o}{r}\right)^2\left(1-\frac{\beta}{1-\chi^3}\right)\right]
+$$
+
+In both formulations, `heating`=1 is the pure internal heating case, and `heating`=0 is the differential heating case.
+
+In both cases, tempreature is nondimensionalised via $T'_o$, the temperature gradient at the outer boundary, $r_o$. In the above definition of the Rayleigh number, therefore: $\mathcal{T} = D T'_o$.

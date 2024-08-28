@@ -976,6 +976,7 @@ std::vector<details::BlockDescription> ModelBackend::explicitLinearBlockBuilder(
                SparseSM::Chebyshev::LinearMap::I2Y3 i2r3(nNr, nNc, ri, ro);
                SparseSM::Chebyshev::LinearMap::I2 i2(nNr, nNc, ri, ro);
                bMat = -c1*ll1*i2r3.mat() -c2*ll1*i2.mat();
+            }
          }
 
          return bMat;

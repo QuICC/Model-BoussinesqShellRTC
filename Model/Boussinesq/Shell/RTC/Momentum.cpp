@@ -78,7 +78,7 @@ void Momentum::setNLComponents()
    {
       //const auto alpha =
       //      nds.find(NonDimensional::Alpha::id())->second->value();
-      const auto alpha = this->eqParams().nd(NonDimensional::Ekman::id()->second->value()
+      MHDFloat alpha = this->eqParams().nd(NonDimensional::Alpha::id());
       if (alpha == 1)
       {
          this->addNLComponent(FieldComponents::Spectral::POL,

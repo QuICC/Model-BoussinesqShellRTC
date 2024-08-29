@@ -208,7 +208,7 @@ class PhysicalModel(base_model.BaseModel):
                     elif field_row == ("velocity","pol") and field_col == ("velocity","pol"):
                         bc = {0:41}
                     elif field_row == ("temperature","") and field_col == ("temperature",""):
-                            bc = {0:21}
+                        bc = {0:21}
 
             # Set LHS galerkin restriction
             if self.use_galerkin:

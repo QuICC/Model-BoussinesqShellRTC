@@ -53,6 +53,7 @@
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y2SphLapl.hpp"
+#include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I2Y3SphLapl.hpp"
 #include "QuICC/SparseSM/Chebyshev/LinearMap/I4Y1.hpp"
@@ -309,6 +310,8 @@ std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
                nds.find(NonDimensional::Lower1d::id())->second->value();
             const auto ro =
                nds.find(NonDimensional::Upper1d::id())->second->value();
+            const auto alpha =
+               nds.find(NonDimensional::Alpha::id())->second->value();
             if (o.useSplitEquation)
             {
                if (o.isSplitOperator)
@@ -319,9 +322,19 @@ std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
                }
                else
                {
-                  SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nNr, nNc,
+                  if (alpha == 1)
+                  {
+                     SparseSM::Chebyshev::LinearMap::I2Y2SphLapl spasm(nNr, nNc,
                      ri, ro, l);
-                  bMat = spasm.mat();
+                     bMat = spasm.mat();
+                  }
+                  else
+                  {
+                     SparseSM::Chebyshev::LinearMap::I2Y3SphLapl spasm(nNr, nNc,
+                     ri, ro, l);
+                     bMat = spasm.mat();
+                  }
+                  
                }
             }
             else
@@ -493,6 +506,8 @@ std::vector<details::BlockDescription> ModelBackend::timeBlockBuilder(
             nds.find(NonDimensional::Lower1d::id())->second->value();
          const auto ro =
             nds.find(NonDimensional::Upper1d::id())->second->value();
+         const auto alpha =
+            nds.find(NonDimensional::Alpha::id())->second->value();
 
          if (l > 0)
          {
@@ -891,11 +906,19 @@ std::vector<details::BlockDescription> ModelBackend::explicitLinearBlockBuilder(
 
 
          if (o.useSplitEquation)
-         // To fully implement the splitEquation version , we need to update the nonlinear operator
-         // work in progress
          {
-            SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
-            bMat = Ra * spasm.mat();
+            if (alpha == 1)
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri, ro);
+               bMat = Ra * spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y3 i2r3(nNr, nNc, ri, ro);
+               SparseSM::Chebyshev::LinearMap::I2 i2(nNr, nNc, ri, ro);
+               bMat = c1 * i2r3.mat() + c2 * i2.mat();
+            }
+            
          }
          else
          {

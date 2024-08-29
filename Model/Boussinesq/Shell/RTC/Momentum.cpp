@@ -76,8 +76,9 @@ void Momentum::setNLComponents()
 
    if (this->couplingInfo(FieldComponents::Spectral::POL).isSplitEquation())
    {
-      const auto alpha =
-            nds.find(NonDimensional::Alpha::id())->second->value();
+      //const auto alpha =
+      //      nds.find(NonDimensional::Alpha::id())->second->value();
+      const auto alpha = this->eqParams().nd(NonDimensional::Ekman::id()->second->value()
       if (alpha == 1)
       {
          this->addNLComponent(FieldComponents::Spectral::POL,

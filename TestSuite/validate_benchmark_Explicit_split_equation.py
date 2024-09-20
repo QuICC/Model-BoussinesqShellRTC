@@ -24,10 +24,6 @@ for prefix in prefixes:
         for r, t in zip(rows,tols):
             results.append(vt.tableTest(prefix +  '_' + mode + f'_spectrum{r:04}.dat', ref_dir, data_dir, r, tol = t, percol = True))
 
-# Nusselt number
-#for r, t in zip(rows,tols):
-#    results.append(vt.tableTest("nusselt.dat", ref_dir, data_dir, r, tol = t, max_rows = r+1))
-
 # CFL
 for r, t in zip(rows,tols):
     results.append(vt.tableTest("cfl.dat", ref_dir, data_dir, r, usecols=(0,1,3,5,6,7,8,9), tol = t, max_rows = r+1))

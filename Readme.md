@@ -45,8 +45,6 @@ $$
 
 ## General background profiles
 
-**The following functionalities are currently implemented only for the Explicit models, and not for the SplitEqaution formalism.**
-
 The parameters $\alpha$ (`alpha`) and $\beta$ (`beta`) can be used to set up general gravity and background temperature profiles. The following are currently implemented:
 
 ### Gravity:
@@ -57,8 +55,6 @@ $$
 $$
 
 where, with $\alpha=1$ a linear profile is obtained, adequate for an inner core of the same density as the outer core.
-
-**This is the feature not implemented in the SplitEqaution formalism.**
 
 ### Temperature:
 

@@ -144,7 +144,8 @@ int IRTCBackend::nBc(const SpectralFieldId& fId) const
 }
 
 void IRTCBackend::applyTau(SparseMatrix& mat, const SpectralFieldId& rowId,
-   const SpectralFieldId& colId, const int l, const Resolution& res,
+   const SpectralFieldId& colId, const int l,
+   std::shared_ptr<details::BlockOptions> opts, const Resolution& res,
    const BcMap& bcs, const NonDimensional::NdMap& nds,
    const bool isSplitOperator) const
 {
@@ -368,7 +369,8 @@ void IRTCBackend::stencil(SparseMatrix& mat, const SpectralFieldId& fieldId,
 
 void IRTCBackend::applyGalerkinStencil(SparseMatrix& mat,
    const SpectralFieldId& rowId, const SpectralFieldId& colId, const int lr,
-   const int lc, const Resolution& res, const BcMap& bcs,
+   const int lc, std::shared_ptr<details::BlockOptions> opts,
+   const Resolution& res, const BcMap& bcs,
    const NonDimensional::NdMap& nds) const
 {
    auto nN = res.counter().dimensions(Dimensions::Space::SPECTRAL, lr)(0);

@@ -88,5 +88,4 @@ quicc_add_stability(Implicit
   ARCHIVEDIR "${CMAKE_BINARY_DIR}/Models/_refdata"
   VARIANTS "framework/parallel/algorithm:tubular"
   MPIRANKS 1
-  GITTAG new/stability
   )

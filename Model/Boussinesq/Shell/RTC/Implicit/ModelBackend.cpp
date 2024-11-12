@@ -702,6 +702,51 @@ std::vector<details::BlockDescription> ModelBackend::implicitBlockBuilder(
          d.realOp = realOp;
          d.imagOp = nullptr;
       }
+      else if (this->useLinearized() &&
+               colId == std::make_pair(PhysicalNames::Velocity::id(),
+                           FieldComponents::Spectral::POL))
+      {
+         // Creat real part of block
+         auto realOp = [](const int nNr, const int nNc, const int l,
+                          std::shared_ptr<details::BlockOptions> opts,
+                          const NonDimensional::NdMap& nds)
+         {
+            SparseMatrix bMat(nNr, nNc);
+
+            const auto ri =
+               nds.find(NonDimensional::Lower1d::id())->second->value();
+            const auto ro =
+               nds.find(NonDimensional::Upper1d::id())->second->value();
+            const auto heatingMode =
+               nds.find(NonDimensional::Heating::id())->second->value();
+
+            const auto bg = RTC::implDetails::effectiveBg(nds);
+            const auto dl = static_cast<MHDFloat>(l);
+            const auto laplh = (dl * (dl + 1.0));
+
+            if (heatingMode == 0)
+            {
+               SparseSM::Chebyshev::LinearMap::I2Y2 spasm(nNr, nNc, ri,
+                  ro);
+               bMat = (bg * laplh) * spasm.mat();
+            }
+            else
+            {
+               SparseSM::Chebyshev::LinearMap::I2 spasm(nNr, nNc, ri,
+                  ro);
+               bMat = (bg * laplh) * spasm.mat();
+            }
+
+            return bMat;
+         };
+
+         // Create diagonal block
+         auto& d = getDescription();
+         d.nRowShift = 0;
+         d.nColShift = 0;
+         d.realOp = realOp;
+         d.imagOp = nullptr;
+      }
    }
    else
    {

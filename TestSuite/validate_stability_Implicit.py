@@ -10,7 +10,7 @@ cond = True
 
 # Check simulation setup
 cond = cond and vt.check_setup('OUT_stdout', ref_dir, data_dir, 'truncation', 6)
-cond = cond and vt.check_setup('OUT_stdout', ref_dir, data_dir, 'physical', 6)
+cond = cond and vt.check_setup('OUT_stdout', ref_dir, data_dir, 'physical', 8)
 cond = cond and vt.check_setup('OUT_stdout', ref_dir, data_dir, 'fixed_temp', 3)
 
 # Check marginal.log

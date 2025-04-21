@@ -18,17 +18,17 @@ mc = None
 rescale = False
 
 # SF/SF, FT/FT, differential heating, small gap
-#bc_vel = 1; bc_temp = 0; heating = 1; rratio = 0.99; Pr = 1; rescale = True
+#bc_vel = 1; bc_temp = 0; heating = 1; alpha=1; beta=1; rratio = 0.99; Pr = 1; rescale = True
 #res = [64, 92, 0]
 #Ta = 1e12; Ek = Ta**-0.5; Rac = 7.4758215298779; mc = 245
 
 # SF/SF, FT/FT, differential heating
-#bc_vel = 1; bc_temp = 0; heating = 1; rratio = 0.35; Pr = 1; rescale = True
+#bc_vel = 1; bc_temp = 0; heating = 1; alpha=1; beta=1; rratio = 0.35; Pr = 1; rescale = True
 #res = [96, 96, 0]
 #Ta = 1e10; Ek = Ta**-0.5; Rac = 40; mc = 10
 
 # SF/SF, FT/FT, internal heating
-#bc_vel = 1; bc_temp = 0; heating = 0; rratio = 0.35; Pr = 1; rescale = True
+#bc_vel = 1; bc_temp = 0; heating = 0; alpha=1; beta=1; rratio = 0.35; Pr = 1; rescale = True
 #Ta = 1e6; Ek = Ta**-0.5
 #res = [32, 32, 0]
 #Ta = 1e7; Ek = Ta**-0.5
@@ -57,13 +57,13 @@ rescale = False
 #res = [1024, 384, 0]
 
 # NS/NS, FT/FT, internal heating
-bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.35; Pr = 1; rescale = True
+#bc_vel = 0; bc_temp = 0; heating = 0; alpha=1; beta=1; rratio = 0.35; Pr = 1; rescale = True
 #Ta = 1e6; Ek = Ta**-0.5
 #res = [32, 32, 0]
 #Ta = 1e7; Ek = Ta**-0.5
 #res = [32, 32, 0]
-Ta = 1e8; Ek = Ta**-0.5; Rac = 31.534088376364; mc = 6
-res = [48, 48, 0]
+#Ta = 1e8; Ek = Ta**-0.5; Rac = 31.534088376364; mc = 6
+#res = [48, 48, 0]
 #Ta = 1e9; Ek = Ta**-0.5; Rac = 42.219154540505; mc = 9
 #res = [48, 48, 0]
 #Ta = 1e10; Ek = Ta**-0.5; Rac = 59.124359856967; mc = 13
@@ -86,7 +86,7 @@ res = [48, 48, 0]
 #res = [1024, 1024, 0]
 
 # NS/NS, FT/FT, differential heating
-#bc_vel = 0; bc_temp = 0; heating = 1; rratio = 0.35; Pr = 1; rescale = True
+#bc_vel = 0; bc_temp = 0; heating = 1; alpha=1; beta=1; rratio = 0.35; Pr = 1; rescale = True
 #Ta = 1e6; Ek = Ta**-0.5
 #res = [32, 32, 0]
 #Ta = 1e7; Ek = Ta**-0.5
@@ -115,7 +115,7 @@ res = [48, 48, 0]
 #res = [1024, 1024, 0]
 
 # NS/NS, FT/FT, internal heating, ri/ro =  0.4
-#bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.4; Pr = 1; rescale = False
+#bc_vel = 0; bc_temp = 0; heating = 0; alpha=1; beta=1; rratio = 0.4; Pr = 1; rescale = False
 #Ek = 3e-3; Rac = 27.254; mc = 4
 #res = [32, 32, 0]
 #Ek = 1e-3; Rac = 23.7692; mc = 5
@@ -128,12 +128,19 @@ res = [48, 48, 0]
 #res = [64, 64, 0]
 
 # NS/NS, FT/FT, internal heating, ri/ro =  0.2
-#bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.2; Pr = 1; rescale = False
+#bc_vel = 0; bc_temp = 0; heating = 0; alpha=1; beta=1; rratio = 0.2; Pr = 1; rescale = False
 #Ek = 1e-4; Rac = 46.482; mc = 6
 
 # NS/NS, FT/FT, internal heating, ri/ro =  0.6
-#bc_vel = 0; bc_temp = 0; heating = 0; rratio = 0.6; Pr = 1; rescale = False
+#bc_vel = 0; bc_temp = 0; heating = 0; alpha=1; beta=1; rratio = 0.6; Pr = 1; rescale = False
 #Ek = 1e-4; Rac = 27.0031; mc = 18
+
+# NS/NS, FT/FT, heating=3, ri/ro=0.35
+bc_vel = 0; bc_temp = 1
+heating = 3; alpha=0.5; beta=0.1
+rratio = 0.35; Pr = 0.1; rescale = False
+Ek = 0.5*1e-3;  Rac = 10; mc = 1
+res = [32, 32, 0]
 
 # Convert Ekman to Taylor number
 Ta = Ek**-2
@@ -154,7 +161,7 @@ if rescale:
     Ek = (Ta*(1.0-rratio)**4)**-0.5
 else:
     Ek = Ta**-0.5
-eq_params = {'ekman':Ek, 'prandtl':Pr, 'rayleigh':Ra, 'r_ratio':rratio, 'heating':heating}
+eq_params = {'ekman':Ek, 'prandtl':Pr, 'rayleigh':Ra, 'r_ratio':rratio, 'heating':heating, 'beta':beta, 'alpha':alpha }
 eq_params.update(model.automatic_parameters(eq_params))
 bcs = {'bcType':model.SOLVER_HAS_BC, 'velocity':bc_vel, 'temperature':bc_temp}
 

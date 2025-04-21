@@ -12,11 +12,13 @@
 #include "Model/Boussinesq/Shell/RTC/Momentum.hpp"
 #include "Model/Boussinesq/Shell/RTC/MomentumKernel.hpp"
 #include "QuICC/NonDimensional/Ekman.hpp"
+#include "QuICC/NonDimensional/Alpha.hpp"
 #include "QuICC/PhysicalNames/Velocity.hpp"
 #include "QuICC/SolveTiming/Prognostic.hpp"
 #include "QuICC/SpatialScheme/ISpatialScheme.hpp"
 #include "QuICC/Transform/Path/I2CurlNl.hpp"
 #include "QuICC/Transform/Path/NegI2CurlCurlNl.hpp"
+#include "QuICC/Transform/Path/NegI2rCurlCurlNl.hpp"
 #include "QuICC/Transform/Path/NegI4CurlCurlNl.hpp"
 
 namespace QuICC {
@@ -74,8 +76,20 @@ void Momentum::setNLComponents()
 
    if (this->couplingInfo(FieldComponents::Spectral::POL).isSplitEquation())
    {
-      this->addNLComponent(FieldComponents::Spectral::POL,
+      //const auto alpha =
+      //      nds.find(NonDimensional::Alpha::id())->second->value();
+      MHDFloat alpha = this->eqParams().nd(NonDimensional::Alpha::id());
+      if (alpha == 1)
+      {
+         this->addNLComponent(FieldComponents::Spectral::POL,
          Transform::Path::NegI2CurlCurlNl::id());
+      }
+      else
+      {
+         this->addNLComponent(FieldComponents::Spectral::POL,
+         Transform::Path::NegI2rCurlCurlNl::id());
+      }
+      
    }
    else
    {

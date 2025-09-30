@@ -136,11 +136,13 @@ quicc_add_benchmark(Implicit
   MPIRANKS 6
   )
 
-quicc_add_benchmark(Implicit
-  MODEL "BoussinesqShellRTC"
-  TYPE "Stability"
-  WORKDIR "${CMAKE_BINARY_DIR}/${QUICC_CURRENT_MODEL_DIR}/TestSuite/Stability"
-  ARCHIVEDIR "${CMAKE_BINARY_DIR}/Models/_refdata"
-  VARIANTS "framework/parallel/algorithm:tubular"
-  MPIRANKS 1
+if(TARGET QuICC::Stability)
+  quicc_add_benchmark(Implicit
+    MODEL "BoussinesqShellRTC"
+    TYPE "Stability"
+    WORKDIR "${CMAKE_BINARY_DIR}/${QUICC_CURRENT_MODEL_DIR}/TestSuite/Stability"
+    ARCHIVEDIR "${CMAKE_BINARY_DIR}/Models/_refdata"
+    VARIANTS "framework/parallel/algorithm:tubular"
+    MPIRANKS 1
   )
+endif()

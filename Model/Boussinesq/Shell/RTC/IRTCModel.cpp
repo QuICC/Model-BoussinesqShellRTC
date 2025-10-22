@@ -41,7 +41,7 @@ VectorFormulation::Id IRTCModel::SchemeFormulation()
 
 std::string IRTCModel::version() const
 {
-   return std::string(gitHash);
+   return "BoussinesqShellRTC:" + std::string(gitHash);
 }
 
 void IRTCModel::addEquations(SharedSimulation spSim)

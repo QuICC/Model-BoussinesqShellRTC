@@ -1,11 +1,11 @@
 /**
- * @file IRTCModel.hpp
+ * @file IRTCVisualization.hpp
  * @brief Implementation of the Boussinesq rotating thermal convection in a
  * spherical shell (Toroidal/Poloidal formulation)
  */
 
-#ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IRTCMODEL_HPP
-#define QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IRTCMODEL_HPP
+#ifndef QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IRTCVISUALIZATION_HPP
+#define QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IRTCVISUALIZATION_HPP
 
 // System includes
 //
@@ -13,8 +13,8 @@
 
 // Project includes
 //
-#include "QuICC/Simulation/Simulation.hpp"
-#include "QuICC/Model/IModelBuilder.hpp"
+#include "QuICC/Generator/VisualizationGenerator.hpp"
+#include "QuICC/Model/IVisualizationGeneratorBuilder.hpp"
 
 namespace QuICC {
 
@@ -30,18 +30,18 @@ namespace RTC {
  * @brief Implementation of the Boussinesq rotating thermal convection spherical
  * shell model (Toroidal/Poloidal formulation)
  */
-class IRTCModel : public IModelBuilder<Simulation>
+class IRTCVisualization : public IVisualizationGeneratorBuilder<VisualizationGenerator>
 {
 public:
    /**
     * @brief Constructor
     */
-   IRTCModel() = default;
+   IRTCVisualization() = default;
 
    /**
     * @brief Destructor
     */
-   virtual ~IRTCModel() = default;
+   virtual ~IRTCVisualization() = default;
 
    /// Formulation used for vector fields
    virtual VectorFormulation::Id SchemeFormulation() override;
@@ -52,24 +52,11 @@ public:
    std::string version() const final;
 
    /**
-    * @brief Add the required equations
+    * @brief Add the visualization generation equations
     *
-    * @param spSim   Shared simulation object
+    * @param spGen   Shared visualization generator
     */
-   virtual void addEquations(SharedSimulation spSim) override;
-
-   /**
-    * @brief Add the required ASCII output files
-    *
-    * @param spSim   Shared simulation object
-    */
-   virtual void addAsciiOutputFiles(SharedSimulation spSim) override;
-
-   /**
-    * @brief XML configuration tags
-    */
-   virtual std::map<std::string, std::map<std::string, int>>
-   configTags() const override;
+   virtual void addVisualizers(SharedVisualizationGenerator spVis) override;
 
 protected:
 private:
@@ -81,4 +68,4 @@ private:
 } // namespace Model
 } // namespace QuICC
 
-#endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IRTCMODEL_HPP
+#endif // QUICC_MODEL_BOUSSINESQ_SHELL_RTC_IRTCVISUALIZATION_HPP

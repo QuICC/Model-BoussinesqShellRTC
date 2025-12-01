@@ -39,4 +39,4 @@ tol = 1e6
 cond = cond and vt.check_setup('marginal.log', ref_dir, data_dir, 'converged to the bracket', 2, checkRa)
 
 if cond:
-    print(vt.stability_success_str)
+    print(vt.success_str)

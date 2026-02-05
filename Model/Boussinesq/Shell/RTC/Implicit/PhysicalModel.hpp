@@ -61,8 +61,7 @@ private:
 template <typename TBuilder> void PhysicalModel<TBuilder>::init()
 {
    TBuilder::init();
-#ifdef QUICC_MODEL_BOUSSINESQSHELLRTC_EXPLICIT_BACKEND_CPP
-
+#ifdef QUICC_MODEL_BOUSSINESQSHELLRTC_IMPLICIT_BACKEND_CPP
    this->mpBackend = std::make_shared<ModelBackend>();
 #else
    std::string pyModule = "boussinesq.shell.rtc.implicit.physical_model";
